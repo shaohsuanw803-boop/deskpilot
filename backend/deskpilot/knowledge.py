@@ -19,6 +19,7 @@ from pathlib import Path
 from rank_bm25 import BM25Plus
 
 from .db import now
+from .localization import expand_query, system_text
 from .policy import PolicyError, can_read, check_outbound, require_role
 from .providers import ProviderGateway, ProviderError
 from .rag_text import (chunk_sections, lexical_tokens, parse_document, reciprocal_rank_fusion,
@@ -327,7 +328,7 @@ class KnowledgeService:
         messages = (context or {}).get("messages", []) if isinstance(context, dict) else []
         rewritten = query
         used = []
-        followup = r"^(那|这个|它|还是|然后|接着|仍然|还有|刚才|继续|还没|试过)"
+        followup = r"^(那|这个|它|还是|然后|接着|仍然|还有|刚才|继续|还没|试过|(?i:continue|still|then|it still|that|next)\b)"
         continuing = bool(re.search(followup, query))
         if continuing and messages:
             prior = next((m.get("content", "") for m in reversed(messages) if m.get("role") == "user"
@@ -362,12 +363,14 @@ class KnowledgeService:
         if strategy not in ("default", "bm25", "dense", "hybrid", "hybrid_rerank"):
             raise ValueError("未知检索策略")
         started = time.perf_counter()
+        locale = (context or {}).get('locale', 'zh-CN')
         run_id = run_id or "search_" + uuid.uuid4().hex[:16]
         rewritten, context_sources = self._rewrite(query.strip(), context)
+        rewritten, aliases = expand_query(rewritten)
         trace = {"strategy": strategy, "stages": [], "timings_ms": {}, "bm25": {"candidates": []},
             "dense": {"status": "disabled_demo", "candidates": []}, "rerank": {"status": "disabled_demo", "candidates": []},
             "fusion": [], "candidate_ids": [], "ranked_document_ids": [], "context_tokens": 0,
-            "context_sources": context_sources}
+            "context_sources": context_sources, "query_aliases": aliases}
         if self.settings.app_mode == "cloud":
             trace["dense"]["status"] = "pending"
             trace["rerank"]["status"] = "disabled_strategy"
@@ -385,17 +388,17 @@ class KnowledgeService:
         cloud = self.settings.app_mode == "cloud" and not local_only and strategy != "bm25"
         if local_only:
             result.update(mode="local_only", status="degraded")
-            trace["local_reason"] = "当前任务禁止云端处理"
+            trace["local_reason"] = system_text("当前任务禁止云端处理", locale)
         if self.settings.app_mode == "demo" and strategy not in ("default", "bm25"):
             result.update(status="degraded")
-            trace.update(strategy_unavailable=True, reason="demo 模式只有真实 BM25，没有模拟向量结果。")
+            trace.update(strategy_unavailable=True, reason=system_text("demo 模式只有真实 BM25，没有模拟向量结果。", locale))
             return finish()
         try:
             check_outbound([rewritten])
         except PolicyError:
             cloud = False
             result.update(mode="local_only", status="degraded")
-            trace["local_reason"] = "问题包含凭据样式内容，禁止云端传输"
+            trace["local_reason"] = system_text("问题包含凭据样式内容，禁止云端传输", locale)
         chunks, filtered = self._accessible(user)
         trace.update(filtered_count=filtered, accessible_chunks=len(chunks))
         trace["stages"].append("authoritative_permission_and_version_prefilter")
@@ -445,7 +448,7 @@ class KnowledgeService:
                 unindexed = {c["document_id"] for c in eligible if
                     self.store.get("document_version", f"{c['document_id']}:v{c['version']}").get("embedding_fingerprint") != self._fingerprint()}
                 if unindexed:
-                    cloud_error = "部分已发布版本尚未建立当前模型的向量索引；请运行 index-cloud。"
+                    cloud_error = system_text("部分已发布版本尚未建立当前模型的向量索引；请运行 index-cloud。", locale)
                     result["status"] = "degraded"
                     trace["dense"] = {"status": "index_incomplete", "error": cloud_error, "document_ids": sorted(unindexed), "candidates": []}
                     eligible = [c for c in eligible if c["document_id"] not in unindexed]
@@ -508,7 +511,10 @@ class KnowledgeService:
         for product, versions in products.items():
             conflicting = any(facets_conflict(version_facets(a), version_facets(b)) for a in versions for b in versions)
             if conflicting and (normalized_identifier(product) in normalized_identifier(rewritten) or candidates and candidates[0].get("product") == product):
-                result.update(status="needs_clarification", clarification=f"请确认 {product} 的产品版本：{'、'.join(sorted(versions))}。")
+                clarification = f"请确认 {product} 的产品版本：{'、'.join(sorted(versions))}。"
+                if locale == 'en':
+                    clarification = f"Please confirm the version of {product}: {', '.join(sorted(versions))}."
+                result.update(status="needs_clarification", clarification=clarification)
                 trace["ambiguous_product"] = product
                 return finish()
         selected = candidates[:5]
@@ -548,6 +554,16 @@ class KnowledgeService:
             if not re.match(r"^\s*#{1,6}\s", line)
             and not (line.lstrip().startswith(">") and re.search(r"虚构|演示资料", line))).strip()
 
+    @staticmethod
+    def _section_kind(anchor):
+        if re.search(r"下一步|后续|验证|完成|升级|维护|\b(?:verification|validation|completion|escalation|next (?:steps|actions))\b", anchor, re.I):
+            return 'next'
+        if re.search(r"步骤|操作|处理|排查|\b(?:steps|troubleshooting|resolution|procedure)\b", anchor, re.I):
+            return 'steps'
+        if re.search(r"依据|范围|适用|现象|原因|\b(?:evidence|scope|applicability|symptoms|cause)\b", anchor, re.I):
+            return 'basis'
+        return 'other'
+
     def _answer_evidence(self, primary, adjacent, user):
         """Select answer excerpts from the already bounded retrieval context; keep ranking unchanged."""
         unique = {}
@@ -557,9 +573,7 @@ class KnowledgeService:
         buckets = {"basis": [], "steps": [], "next": [], "other": []}
         for chunk in unique.values():
             anchor = chunk["anchor"].split(" > ")[-1]
-            bucket = "steps" if re.search(r"步骤|操作|处理|排查", anchor) else (
-                "next" if re.search(r"验证|完成|升级|维护|后续", anchor) else (
-                    "basis" if re.search(r"依据|范围|适用|现象|原因", anchor) else "other"))
+            bucket = self._section_kind(anchor)
             buckets[bucket].append(chunk)
         buckets["basis"].sort(key=lambda c: 0 if re.search(r"范围|适用", c["anchor"]) else 1)
         selected = []
@@ -572,26 +586,27 @@ class KnowledgeService:
                 break
         return selected or list(unique.values())[:5]
 
-    def _extract_answer(self, evidence):
+    def _extract_answer(self, evidence, locale='zh-CN'):
         groups = {"依据": [], "处理步骤": [], "下一步": []}
         for i, chunk in enumerate(evidence, 1):
             anchor = chunk["anchor"].split(" > ")[-1]
-            group = "处理步骤" if re.search(r"步骤|操作|处理|排查", anchor) else ("下一步" if re.search(r"验证|完成|升级|维护", anchor) else "依据")
+            group = {'steps': '处理步骤', 'next': '下一步'}.get(self._section_kind(anchor), '依据')
             groups[group].append(f"[{i}] {chunk['title']} · {anchor}\n{self._excerpt_body(chunk['text'])}")
         if not groups["处理步骤"]:
-            groups["处理步骤"].append("当前命中内容未给出独立的操作步骤，请先核对上述适用范围。")
+            groups["处理步骤"].append(system_text("当前命中内容未给出独立的操作步骤，请先核对上述适用范围。", locale))
         if not groups["下一步"]:
-            groups["下一步"].append("若仍未解决，请记录产品版本、完整报错和已尝试步骤后提交服务台工单。")
-        return "知识库原文摘录：\n\n" + "\n\n".join(f"{title}\n" + "\n\n".join(parts) for title, parts in groups.items() if parts)
+            groups["下一步"].append(system_text("若仍未解决，请记录产品版本、完整报错和已尝试步骤后提交服务台工单。", locale))
+        return system_text("知识库原文摘录：", locale) + "\n\n" + "\n\n".join(f"{system_text(title, locale)}\n" + "\n\n".join(parts) for title, parts in groups.items() if parts)
 
     def answer(self, query, user, run_id, context=None):
+        locale = (context or {}).get('locale', 'zh-CN')
         retrieval = self.search(query, user, run_id, context)
         def finish(answer, status, citations):
             if isinstance(context, dict) and context.get("dependencies"):
                 try:
                     self._cloud_authorizer(user, context, require_cloud=False)()
                 except PolicyError:
-                    return {"answer": "本次使用的上下文或访问权限已变化，请重新发起查询。", "status": "no_evidence", "citations": [],
+                    return {"answer": system_text("本次使用的上下文或访问权限已变化，请重新发起查询。", locale), "status": "no_evidence", "citations": [],
                         "retrieval": {"query": query, "rewritten_query": query, "mode": "local_only", "status": "no_evidence",
                             "evidence": [], "adjacent_context": [], "elapsed_ms": retrieval.get("elapsed_ms", 0),
                             "trace": {"context_invalidated": True, "context_sources": []}}}
@@ -600,18 +615,18 @@ class KnowledgeService:
             return finish(retrieval["clarification"], "needs_clarification", [])
         evidence = self._revalidate(retrieval["evidence"], user)
         if not evidence:
-            return finish("没有找到当前可访问且足以回答的知识依据。请补充产品、版本和具体报错，或提交服务台工单。", "no_evidence", [])
+            return finish(system_text("没有找到当前可访问且足以回答的知识依据。请补充产品、版本和具体报错，或提交服务台工单。", locale), "no_evidence", [])
         evidence = self._answer_evidence(evidence, retrieval.get("adjacent_context", []), user)
         if not evidence:
-            return finish("命中资料只有标题或说明，缺少可用于回答的正文。请补充信息或联系服务台。", "no_evidence", [])
+            return finish(system_text("命中资料只有标题或说明，缺少可用于回答的正文。请补充信息或联系服务台。", locale), "no_evidence", [])
         status = retrieval["status"]
-        response = self._extract_answer(evidence)
+        response = self._extract_answer(evidence, locale)
         cloud = self.settings.app_mode == "cloud" and retrieval["mode"] != "local_only" and status == "ready"
         if cloud and any(not c["cloud_allowed"] for c in evidence):
             cloud = False
             status = "degraded"
             retrieval["mode"] = "local_only"
-            retrieval["trace"]["local_reason"] = "命中禁止出站的来源，答案在本地摘录"
+            retrieval["trace"]["local_reason"] = system_text("命中禁止出站的来源，答案在本地摘录", locale)
         if cloud:
             try:
                 # Generate evidence selections, then verify quotes exactly. Unsupported model prose
@@ -644,7 +659,7 @@ class KnowledgeService:
                     retrieval["evidence"] = self._revalidate(retrieval["evidence"], user)
                     retrieval["adjacent_context"] = self._revalidate(retrieval.get("adjacent_context", []), user)
                     self._sanitize_trace(retrieval["trace"], user)
-                    return finish("现有资料不足以可靠回答这个问题。请补充具体报错或联系服务台核实。", "no_evidence", [])
+                    return finish(system_text("现有资料不足以可靠回答这个问题。请补充具体报错或联系服务台核实。", locale), "no_evidence", [])
                 selected, passages = [], []
                 for item in quotes[:5]:
                     source = source_map.get(item.get("source_id"))
@@ -657,7 +672,7 @@ class KnowledgeService:
                     selected.append(current)
                     passages.append({**current, "text": quote})
                 evidence = selected
-                response = self._extract_answer(passages)
+                response = self._extract_answer(passages, locale)
                 retrieval["trace"]["generation"] = {"status": "verified_quotes", "model": self.settings.llm_model}
             except (ProviderError, PolicyError, ValueError, TypeError, AttributeError) as exc:
                 status = "degraded"
@@ -665,7 +680,7 @@ class KnowledgeService:
         latest = self._revalidate(evidence, user)
         if len(latest) != len(evidence) or any(a["text"] != b["text"] for a, b in zip(latest, evidence)):
             evidence = latest
-            response = self._extract_answer(latest) if latest else "来源状态已变化，请重新查询或联系服务台。"
+            response = self._extract_answer(latest, locale) if latest else system_text("来源状态已变化，请重新查询或联系服务台。", locale)
             status = "degraded" if latest else "no_evidence"
         evidence = latest
         for item in evidence:

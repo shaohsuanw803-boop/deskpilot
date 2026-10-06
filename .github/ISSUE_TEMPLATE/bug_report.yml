@@ -1,26 +1,26 @@
-name: 问题报告
-description: 提供可复现步骤，帮助定位问题。
+name: Bug report / 问题报告
+description: Provide a reproducible example / 提供可复现步骤。
 title: "[Bug] "
 body:
   - type: markdown
     attributes:
-      value: 请先移除 API Key、个人信息、企业资料和供应商完整响应。安全漏洞请遵循 SECURITY.md，不要公开披露敏感细节。
+      value: Remove keys, personal/company data and complete provider responses. Follow SECURITY.md for vulnerabilities. 请勿公开敏感资料。
   - type: textarea
     id: environment
     attributes:
-      label: 运行环境
-      description: 操作系统、Python / Node 版本、demo / cloud 模式及提交版本。
+      label: Environment / 运行环境
+      description: OS, Python / Node, demo / cloud mode, revision and selected UI language.
     validations:
       required: true
   - type: textarea
     id: reproduce
     attributes:
-      label: 复现步骤
-      description: 使用虚构数据描述步骤，并说明实际结果与预期结果。
+      label: Reproduction / 复现步骤
+      description: Use fictional data and describe actual versus expected behavior. / 使用虚构数据。
     validations:
       required: true
   - type: textarea
     id: evidence
     attributes:
-      label: 脱敏日志或截图
-      description: 可提供脱敏运行 ID、报错或检索 trace。不要粘贴 .env 文件。
+      label: Redacted evidence / 脱敏记录
+      description: Redacted run ID, error, trace or screenshot. Never paste .env. / 不要粘贴密钥。

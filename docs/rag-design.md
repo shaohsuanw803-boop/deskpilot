@@ -1,5 +1,7 @@
 # RAG 策略与落地边界
 
+[English](en/rag-design.md) · [中文首页](../README.zh-CN.md)
+
 目标是回答中文 IT 问题时找到适用版本、提供可检查证据，并在不确定时停止猜测。代码入口为后端 `KnowledgeService`，模型通过 `ProviderGateway` 调用，评测脚本不替换实际检索服务。
 
 ## 索引与知识生命周期

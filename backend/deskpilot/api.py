@@ -7,12 +7,14 @@ from typing import Literal
 
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, Response, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+from fastapi.exceptions import RequestValidationError
 from pydantic import BaseModel, ConfigDict, Field
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from .config import Settings
 from .db import Store, new_id
 from .knowledge import KnowledgeService
+from .localization import error_text, request_locale, skill_display, system_text
 from .policy import USERS, PolicyError, User, own_or_staff, redact, require_role
 from .workflow import DeskService
 
@@ -31,6 +33,7 @@ class RunInput(Input):
     ticket_id: str | None = None
     cloud_allowed: bool = True
     mcp_server: Literal['demo-it', 'enterprise-it'] | None = None
+    locale: Literal['en', 'zh-CN'] | None = None
 
 
 class MCPCall(Input):
@@ -107,7 +110,7 @@ def create_app(settings=None, seed=True):
             store.close()
 
     app = FastAPI(title='DeskPilot API', version='0.1.0', lifespan=lifespan,
-                  description='本地企业 IT 服务台作品。演示身份；真实 RAG 与可恢复审批。')
+                  description='Local enterprise IT helpdesk. Demo identities, real RAG and resumable approvals.')
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=['localhost', '127.0.0.1', 'testserver'])
 
     @app.middleware('http')
@@ -116,7 +119,7 @@ def create_app(settings=None, seed=True):
         if request.method not in ('GET', 'HEAD', 'OPTIONS') and origin:
             if origin not in (str(request.base_url).rstrip('/'), 'http://localhost:5173', 'http://127.0.0.1:5173',
                               'http://localhost:8000', 'http://127.0.0.1:8000', 'http://testserver'):
-                return JSONResponse({'detail': '不接受来自其他站点的写入请求。'}, status_code=403)
+                return JSONResponse({'detail': system_text('不接受来自其他站点的写入请求。', request_locale(request.headers.get('accept-language')))}, status_code=403)
         response = await call_next(request)
         response.headers['X-Content-Type-Options'] = 'nosniff'
         response.headers['Referrer-Policy'] = 'same-origin'
@@ -126,11 +129,28 @@ def create_app(settings=None, seed=True):
 
     @app.exception_handler(PolicyError)
     async def policy_exception(request, exc):
-        return JSONResponse({'detail': str(redact(str(exc)))}, status_code=403)
+        return JSONResponse({'detail': error_text(str(redact(str(exc))), request_locale(request.headers.get('accept-language')))}, status_code=403)
 
     @app.exception_handler(ValueError)
     async def value_exception(request, exc):
-        return JSONResponse({'detail': str(redact(str(exc)))}, status_code=400)
+        return JSONResponse({'detail': error_text(str(redact(str(exc))), request_locale(request.headers.get('accept-language')))}, status_code=400)
+
+    @app.exception_handler(HTTPException)
+    async def http_exception(request, exc):
+        locale = request_locale(request.headers.get('accept-language'))
+        return JSONResponse({'detail': system_text(str(exc.detail), locale)}, status_code=exc.status_code, headers=exc.headers)
+
+    @app.exception_handler(RequestValidationError)
+    async def validation_exception(request, exc):
+        locale = request_locale(request.headers.get('accept-language'))
+        # Pydantic's input and context may contain secrets. Return only safe field paths and codes.
+        known_fields = {'body', 'query', 'path', 'header'} | {
+            field for model in (Profile, RunInput, MCPCall, TicketInput, Resolution, Decision, Version, Memory, Search)
+            for field in model.model_fields}
+        details = [{'loc': [part if isinstance(part, int) or part in known_fields else 'field' for part in error['loc']], 'type': error['type'],
+                    'msg': '字段值无效或缺少必填字段。' if locale == 'zh-CN' else 'Invalid value or missing required field.'}
+                   for error in exc.errors()]
+        return JSONResponse({'detail': details}, status_code=422)
 
     def current_user(request: Request):
         session = request.app.state.store.get('session', request.cookies.get('deskpilot_session', ''))
@@ -144,13 +164,15 @@ def create_app(settings=None, seed=True):
             'expires_at': (datetime.now(timezone.utc) + timedelta(days=7)).isoformat()})
         response.set_cookie('deskpilot_session', token, httponly=True, samesite='strict', max_age=604800)
 
-    def config_status():
+    def config_status(locale='en'):
         missing = settings.cloud_missing()
         return {'mode': settings.app_mode, 'cloud_ready': not missing, 'missing': missing,
                 'models': {'chat': settings.llm_model, 'embedding': settings.embedding_model,
                            'rerank': settings.rerank_model},
-                'capabilities': ['真实中文 BM25 检索', '版本与权限过滤', '持久化工单与审批',
-                                 '来源引用与撤回检查', '云端适配器（需配置）'],
+                'capabilities': (['真实中文 BM25 检索', '版本与权限过滤', '持久化工单与审批',
+                                 '来源引用与撤回检查', '云端适配器（需配置）'] if locale == 'zh-CN' else
+                                 ['Real BM25 retrieval with reviewed bilingual aliases', 'Version and access filtering',
+                                  'Persistent tickets and approvals', 'Citations and source revocation checks', 'Cloud adapters (configuration required)']),
                 'budgets': {'per_run_cny': settings.max_run_cost_cny, 'daily_cny': settings.max_daily_cost_cny},
                 'identity_mode': 'local_demo', 'price_as_of': settings.price_as_of}
 
@@ -181,7 +203,7 @@ def create_app(settings=None, seed=True):
             if not memory or memory.get('deleted') or memory['revision'] != ref['revision']:
                 invalid = True
         if invalid:
-            value.update(answer='此回答依赖的来源或偏好已变化，或当前身份无权查看，请重新检索。',
+            value.update(answer=system_text('此回答依赖的来源或偏好已变化，或当前身份无权查看，请重新检索。', value.get('locale', 'zh-CN')),
                          citations=[], retrieval={}, source_invalidated=True)
         elif retrieval:
             app.state.knowledge._sanitize_trace(retrieval.setdefault('trace', {}), user)
@@ -214,23 +236,26 @@ def create_app(settings=None, seed=True):
                             'tickets': len([t for t in store.list('ticket') if staff or t['owner_id'] == user.id]),
                             'approvals': len([a for a in store.list('approval') if a['status'] == 'pending'
                                               and (staff or a['requester_id'] == user.id)])},
-                'config': config_status()}
+                'locale': request_locale(request.headers.get('accept-language')),
+                'config': config_status(request_locale(request.headers.get('accept-language')))}
 
     @app.get('/api/config/status')
-    def status(user: User = Depends(current_user)):
-        return config_status()
+    def status(request: Request, user: User = Depends(current_user)):
+        return config_status(request_locale(request.headers.get('accept-language')))
 
     @app.post('/api/config/check')
-    def check(user: User = Depends(current_user)):
+    def check(request: Request, user: User = Depends(current_user)):
         require_role(user, 'admin')
         if settings.app_mode != 'cloud' or settings.cloud_missing():
             return {'ok': False, 'missing': settings.cloud_missing(),
-                    'message': '当前未启用完整云端配置，未发出任何外部请求。'}
+                    'message': system_text('当前未启用完整云端配置，未发出任何外部请求。', request_locale(request.headers.get('accept-language')))}
         return app.state.knowledge.providers.connectivity_check()
 
     @app.post('/api/runs')
-    def run(body: RunInput, user: User = Depends(current_user)):
-        result = app.state.service.run(user, **body.model_dump())
+    def run(body: RunInput, request: Request, user: User = Depends(current_user)):
+        parameters = body.model_dump()
+        parameters['locale'] = body.locale or request_locale(request.headers.get('accept-language'))
+        result = app.state.service.run(user, **parameters)
         return visible_run(result, user)
 
     @app.get('/api/runs')
@@ -307,7 +332,7 @@ def create_app(settings=None, seed=True):
         return redact(ticket)
 
     @app.post('/api/tickets/{ticket_id}/knowledge')
-    def promote(ticket_id: str, user: User = Depends(current_user)):
+    def promote(ticket_id: str, request: Request, user: User = Depends(current_user)):
         require_role(user, 'it', 'admin')
         ticket = find('ticket', ticket_id)
         if ticket['status'] != 'resolved':
@@ -317,6 +342,8 @@ def create_app(settings=None, seed=True):
         package = app.state.service.skills.get('ticket-summary')
         app.state.service.skills.guard(user, 'ticket-summary', package['version'], 'ticket.summarize')
         text = f"# {ticket['title']}\n\n来源工单：{ticket_id}\n\n## 问题\n{ticket['description']}\n\n## 经人工确认的解决方法\n{ticket['resolution']}\n"
+        if request_locale(request.headers.get('accept-language')) == 'en':
+            text = f"# {ticket['title']}\n\nSource ticket: {ticket_id}\n\n## Issue\n{ticket['description']}\n\n## Human-confirmed resolution\n{ticket['resolution']}\n"
         metadata = {'title': ticket['title'], 'source_ticket_id': ticket_id, 'owner': user.name,
                     'roles': ['it', 'admin'], 'cloud_allowed': False}
         doc = app.state.knowledge.ingest(f'{ticket_id}.md', text.encode(), metadata, user)
@@ -383,12 +410,16 @@ def create_app(settings=None, seed=True):
         return app.state.knowledge.get_source(chunk_id, user)
 
     @app.post('/api/retrieval/inspect')
-    def inspect(body: Search, user: User = Depends(current_user)):
-        return app.state.knowledge.search(body.query, user, run_id=new_id('inspect'), strategy=body.strategy)
+    def inspect(body: Search, request: Request, user: User = Depends(current_user)):
+        return app.state.knowledge.search(body.query, user, run_id=new_id('inspect'), strategy=body.strategy,
+                                         context={'locale': request_locale(request.headers.get('accept-language'))})
 
     @app.get('/api/connectors')
-    def connectors(user: User = Depends(current_user)):
-        return {'items': app.state.service.harness.catalog()}
+    def connectors(request: Request, user: User = Depends(current_user)):
+        locale = request_locale(request.headers.get('accept-language'))
+        names = {'demo-it': 'Local IT demo', 'enterprise-it': 'Enterprise IT connector'}
+        return {'items': [{**item, 'display_name': names[item['id']] if locale == 'en' else item['name']}
+                          for item in app.state.service.harness.catalog()]}
 
     @app.post('/api/connectors/{server_id}/call')
     def connector_call(server_id: str, body: MCPCall, user: User = Depends(current_user)):
@@ -404,8 +435,9 @@ def create_app(settings=None, seed=True):
         return {'items': app.state.service.harness.records(user)}
 
     @app.get('/api/skills')
-    def skills(user: User = Depends(current_user)):
-        return {'items': app.state.service.skills.list()}
+    def skills(request: Request, user: User = Depends(current_user)):
+        locale = request_locale(request.headers.get('accept-language'))
+        return {'items': [skill_display(item, locale) for item in app.state.service.skills.list()]}
 
     @app.post('/api/skills/{skill_id}/evaluate')
     def evaluate(skill_id: str, body: Version, user: User = Depends(current_user)):
@@ -433,7 +465,7 @@ def create_app(settings=None, seed=True):
         return {'deleted': True}
 
     @app.get('/api/operations')
-    def operations(user: User = Depends(current_user)):
+    def operations(request: Request, user: User = Depends(current_user)):
         require_role(user, 'it', 'admin')
         store = app.state.store
         usage = store.list('usage')
@@ -444,7 +476,8 @@ def create_app(settings=None, seed=True):
             if report_path.exists():
                 try:
                     report = json.loads(report_path.read_text(encoding='utf-8'))
-                    evaluations.append({'name': f"检索评测 · {report.get('split', name)}",
+                    label = '检索评测' if request_locale(request.headers.get('accept-language')) == 'zh-CN' else 'Retrieval evaluation'
+                    evaluations.append({'name': f"{label} · {report.get('split', name)}",
                                         **{k: v for k, v in report.items() if k != 'results'}})
                 except (ValueError, OSError):
                     pass
@@ -468,7 +501,7 @@ def create_app(settings=None, seed=True):
             return FileResponse(candidate)
         if (dist / 'index.html').exists():
             return FileResponse(dist / 'index.html')
-        return JSONResponse({'app': 'DeskPilot', 'message': '前端开发模式请打开 http://localhost:5173', 'api_docs': '/docs'})
+        return JSONResponse({'app': 'DeskPilot', 'message': 'For frontend development, open http://localhost:5173', 'api_docs': '/docs'})
 
     return app
 

@@ -319,6 +319,32 @@ pre {
   align-items: center;
   gap: 21px;
 }
+.language-toggle {
+  flex-shrink: 0;
+  min-width: 62px;
+  min-height: 36px;
+  padding: 7px 11px;
+  border: 1px solid #dbe6f6;
+  border-radius: 9px;
+  background: #fff;
+  color: #315d99;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.language-toggle:hover {
+  background: #edf4ff;
+  border-color: #a7c4ec;
+}
+.language-toggle:focus-visible {
+  outline: 3px solid #bfd6fb;
+  outline-offset: 2px;
+}
+.startup > .language-toggle {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+}
 .mode-badge {
   display: flex;
   align-items: center;
@@ -3741,11 +3767,14 @@ input[type='checkbox'] {
 }
 @media (max-width: 550px) {
   .app-header {
-    height: 64px;
-    padding: 0 16px;
+    height: auto;
+    min-height: 96px;
+    flex-wrap: wrap;
+    padding: 10px 16px;
     gap: 11px;
   }
   .header-title {
+    width: 100%;
     gap: 7px;
     font-size: 13px;
     white-space: nowrap;
@@ -3755,7 +3784,9 @@ input[type='checkbox'] {
     padding: 3px;
   }
   .header-actions {
-    gap: 11px;
+    width: 100%;
+    justify-content: space-between;
+    gap: 8px;
   }
   .header-divider {
     display: none;

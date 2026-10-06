@@ -1,5 +1,7 @@
 # MCP 与 Agent harness：接入、边界与维护
 
+[English](en/mcp-harness.md) · [中文首页](../README.zh-CN.md)
+
 本版使用官方 MCP Python SDK 1.x（锁定到依赖锁中的确切版本）。DeskPilot 是 MCP 客户端；内置的 `deskpilot.mcp_demo_server` 是独立 stdio 服务端。MCP 负责协议，授权仍由 DeskPilot 服务端决定。
 
 ## 可以运行的功能

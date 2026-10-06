@@ -1,22 +1,28 @@
-# 安全说明
+# Security policy
 
-DeskPilot 是本地展示项目。它没有真实企业身份认证、SSO、完整 DLP、隔离工具沙箱、不可篡改审计或合规认证。演示身份选择器允许用户主动切换角色，不适合向不可信网络开放。
+[简体中文](docs/SECURITY.zh-CN.md) · [Project README](README.md)
 
-仅在回环地址运行，使用虚构资料。`.env`、`data/`、备份和日志不要提交到公开仓库。云模式会把允许的数据发送至所配置的提供商，调用者需有相应授权；`cloud_allowed` 不是自动法律合规判断。
+DeskPilot is a local demonstration. It does not provide production enterprise authentication, SSO, complete DLP, an isolated tool sandbox, immutable audit or compliance certification. The demo identity picker intentionally allows role changes and must not be exposed to untrusted networks.
 
-## 报告问题
+Bind to loopback and use fictional data. Never publish `.env`, application data, backups or logs. Cloud mode sends approved content to configured providers; callers must have permission to do so. `cloud_allowed` is not a legal-compliance determination. MCP remote mode has its own explicit enable switch and separate credential.
 
-如果此仓库启用了 GitHub Private vulnerability reporting，请通过 Security → Report a vulnerability 私下报告。尚未启用时先通过仓库维护者明确提供的私下渠道联系；不要把可用凭据、敏感资料或完整利用链放进公开 issue。当前没有承诺响应时限的企业安全团队。
+## Reporting a vulnerability
 
-报告中描述受影响版本、最小虚构复现、预期与实际权限边界、是否发生外发。不要测试未经授权的真实公司系统。
+If GitHub Private vulnerability reporting is enabled, use **Security → Report a vulnerability**. Otherwise, use a private contact channel explicitly provided by the maintainer. Do not disclose usable credentials, sensitive documents or complete exploit chains in public issues. No enterprise security response SLA is promised.
 
-## 已实现控制与剩余风险
+Include the affected revision, a minimal fictional reproduction, expected and actual permission boundaries, and whether data was sent externally. Do not probe real company systems without authorization.
 
-- 权限检查由代码执行，检索和来源打开均需检查；演示角色不是可靠生产身份。
-- 敏感凭据样式检测用于外发前拦截，不能识别所有商业秘密或个人信息。
-- 外部内容作为不可信资料，不能赋予工具权限；模型输出仍需校验。
-- 高风险模拟操作走审批与审计；接入真实系统前必须另做最小权限与幂等验证。
-- 单机数据库记录可被拥有本机权限的用户修改，不宣称防篡改。
-- 删除记忆不能撤回已经发送给第三方服务的数据，也不自动删除备份。
+## Implemented controls and remaining risks
 
-支持范围为仓库当前维护版本。升级前阅读变更和评测报告，保留安全备份。
+- Server code enforces retrieval and source-access permissions; demo identities are not trustworthy production identities.
+- Credential-pattern checks block some sensitive outbound data but cannot identify every secret or personal record.
+- External content cannot grant tools authority. Model and MCP outputs still require validation.
+- Simulated sensitive changes use approval and audit. Real integrations need separately validated least privilege and idempotency.
+- Users with local filesystem access can modify SQLite records; audit is not tamper-proof.
+- Deleting a memory cannot recall data already sent to providers or automatically erase backups.
+- MCP contract checks do not prove implementation safety; decoded size checks and DNS validation require additional resource and network controls in production.
+- Language selection changes presentation, not permissions. Sources, personal memories and historical facts are never automatically translated or sent to another provider.
+
+Scan Git index and history using `scripts/check_secrets.py`; output omits matched values. This is a heuristic, not a complete DLP or secret-detection guarantee. If a credential leaks, revoke or rotate it before cleaning history and copies.
+
+Only the currently maintained repository version is supported. Read changes and evaluation reports before upgrading and preserve protected backups.

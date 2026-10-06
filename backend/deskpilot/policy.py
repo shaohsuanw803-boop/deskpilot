@@ -17,7 +17,10 @@ class User:
     department: str
 
     def as_dict(self):
-        return asdict(self)
+        english = {'alice': ('Alice Lin', 'Product'), 'bob': ('Bob Zhou', 'Finance'),
+                   'chen': ('Chen', 'IT Helpdesk'), 'admin': ('Administrator', 'IT Helpdesk')}
+        name, department = english.get(self.id, (self.name, self.department))
+        return {**asdict(self), 'name_en': name, 'department_en': department}
 
 
 USERS = {

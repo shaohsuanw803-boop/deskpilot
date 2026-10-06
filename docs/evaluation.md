@@ -1,5 +1,7 @@
 # 评测方法
 
+[English](en/evaluation.md) · [中文首页](../README.zh-CN.md)
+
 语料为 40 篇明确标注虚构的中文 IT 文档；80 个问题为 40 个 family，每个 family 两种表述。dev/test 各 20 个 family，不跨 split。`scripts/build_fixtures.py` 仅用于重建版本化测试资料，不参与线上检索。
 
 ## 可复现运行

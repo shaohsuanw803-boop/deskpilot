@@ -1,7 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { getLocale, translate as t, useI18n } from './i18n';
 
 export type Data = Record<string, any>;
-export type User = { id: string; name: string; role: string; department: string };
+export type User = {
+  id: string;
+  name: string;
+  name_en?: string;
+  role: string;
+  department: string;
+  department_en?: string;
+};
+export function displayUserName(user: User): string {
+  return getLocale() === 'en' ? user.name_en || user.name : user.name;
+}
 export type Bootstrap = {
   mode: string;
   user: User;
@@ -20,17 +31,24 @@ export class ApiError extends Error {
 
 export async function request<T = Data>(path: string, options?: RequestInit): Promise<T> {
   let response: Response;
+  const headers = new Headers(options?.headers);
+  headers.set('Accept-Language', getLocale());
+  if (!(options?.body instanceof FormData) && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
   try {
     response = await fetch(`/api${path}`, {
       credentials: 'same-origin',
       ...options,
-      headers:
-        options?.body instanceof FormData
-          ? options.headers
-          : { 'Content-Type': 'application/json', ...options?.headers },
+      headers,
     });
   } catch {
-    throw new Error('无法连接服务。请确认后端已启动，然后重试。');
+    throw new Error(
+      t(
+        '无法连接服务。请确认后端已启动，然后重试。',
+        'Cannot connect. Check that the backend is running, then retry.',
+      ),
+    );
   }
   const contentType = response.headers.get('content-type') || '';
   const body = contentType.includes('application/json') ? await response.json() : null;
@@ -40,7 +58,7 @@ export async function request<T = Data>(path: string, options?: RequestInit): Pr
         ? body.detail
         : body?.detail
           ? JSON.stringify(body.detail)
-          : `请求失败（${response.status}）`;
+          : t(`请求失败（${response.status}）`, `Request failed (${response.status})`);
     throw new ApiError(detail, response.status);
   }
   return body as T;
@@ -53,7 +71,9 @@ export const patch = <T = Data>(path: string, body: Data) =>
 export const remove = (path: string) => request(path, { method: 'DELETE' });
 export const sid = (id: unknown) => encodeURIComponent(String(id));
 export function errorText(error: unknown) {
-  return error instanceof Error ? error.message : '操作失败，请重试。';
+  return error instanceof Error
+    ? error.message
+    : t('操作失败，请重试。', 'The operation failed. Please retry.');
 }
 export function array(value: unknown): Data[] {
   return Array.isArray(value) ? value : [];
@@ -69,7 +89,7 @@ export function date(value?: string, full = false) {
   return Number.isNaN(parsed.valueOf())
     ? value
     : parsed.toLocaleString(
-        'zh-CN',
+        getLocale() === 'zh-CN' ? 'zh-CN' : 'en-US',
         full
           ? { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }
           : { month: '2-digit', day: '2-digit' },
@@ -77,6 +97,7 @@ export function date(value?: string, full = false) {
 }
 export const isStaff = (user: User) => ['it', 'admin'].includes(user.role);
 export function useResource<T>(path: string | null, revision = 0) {
+  const { locale } = useI18n();
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -99,7 +120,7 @@ export function useResource<T>(path: string | null, revision = 0) {
     } finally {
       if (serial.current === token) setLoading(false);
     }
-  }, [path]);
+  }, [path, locale]);
   useEffect(() => {
     void reload();
     return () => {

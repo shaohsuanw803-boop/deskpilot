@@ -1,3 +1,4 @@
+import { translate as t, useI18n } from './i18n';
 import { useCallback, useRef, useState } from 'react';
 import {
   Activity,
@@ -17,22 +18,32 @@ import {
   ShieldCheck,
   Workflow,
 } from 'lucide-react';
-import { errorText, get, post, useResource, type Bootstrap, type Data } from './api';
+import {
+  displayUserName,
+  errorText,
+  get,
+  post,
+  useResource,
+  type Bootstrap,
+  type Data,
+} from './api';
 import { Badge, Button, ErrorBox, Loading, Markdown, Modal, TraceView } from './components';
 import Tasks from './Tasks';
 import Knowledge from './Knowledge';
 import Connectors from './Connectors';
 import { Configuration, Memories, Operations, Skills } from './OtherPages';
 
-const navigation = [
-  { id: 'tasks', label: '对话与任务', icon: MessageSquare },
-  { id: 'knowledge', label: '知识库', icon: BookOpen },
-  { id: 'skills', label: '技能管理', icon: Workflow },
-  { id: 'memory', label: '记忆管理', icon: HeartHandshake },
-  { id: 'connectors', label: '连接器与执行控制', icon: Cable },
-  { id: 'operations', label: '评测与运行', icon: Activity },
-];
 export default function App() {
+  const { locale, setLocale } = useI18n();
+  const navigation = [
+    { id: 'tasks', label: t('对话与任务', 'Conversations & tasks'), icon: MessageSquare },
+    { id: 'knowledge', label: t('知识库', 'Knowledge base'), icon: BookOpen },
+    { id: 'skills', label: t('技能管理', 'Skills'), icon: Workflow },
+    { id: 'memory', label: t('记忆管理', 'Memory'), icon: HeartHandshake },
+    { id: 'connectors', label: t('连接器与执行控制', 'Connectors & execution'), icon: Cable },
+    { id: 'operations', label: t('评测与运行', 'Evaluation & runs'), icon: Activity },
+  ];
+
   const bootstrap = useResource<Bootstrap>('/bootstrap');
   const [workspace, setWorkspace] = useState('tasks');
   const [revision, setRevision] = useState(0);
@@ -86,22 +97,38 @@ export default function App() {
   if (!data)
     return (
       <div className="startup">
+        <button
+          className="language-toggle"
+          type="button"
+          lang={locale === 'en' ? 'zh-CN' : 'en'}
+          aria-label={
+            locale === 'en' ? 'Switch language to Chinese (中文)' : '切换为英文 (English)'
+          }
+          onClick={() => setLocale(locale === 'en' ? 'zh-CN' : 'en')}
+        >
+          {locale === 'en' ? '中文' : 'English'}
+        </button>
         <div className="startup-brand">
           <Brand />
           <strong>
-            DeskPilot<span>企业 IT 服务台</span>
+            DeskPilot<span>{t('企业 IT 服务台', 'Enterprise IT service desk')}</span>
           </strong>
         </div>
         {bootstrap.loading ? (
-          <Loading>正在连接你的工作区…</Loading>
+          <Loading>{t('正在连接你的工作区…', 'Connecting to your workspace…')}</Loading>
         ) : (
           <div className="startup-error">
-            <h1>工作台还没有连接到服务</h1>
-            <p>请启动端口 8000 上的后端 API，然后重新连接。</p>
+            <h1>{t('工作台还没有连接到服务', 'The workspace is not connected')}</h1>
+            <p>
+              {t(
+                '请启动端口 8000 上的后端 API，然后重新连接。',
+                'Start the backend API on port 8000, then reconnect.',
+              )}
+            </p>
             <ErrorBox error={bootstrap.error} />
             <Button onClick={() => void bootstrap.reload()}>
               <RefreshCw size={16} />
-              重新连接
+              {t('重新连接', 'Reconnect')}
             </Button>
           </div>
         )}
@@ -113,7 +140,7 @@ export default function App() {
       {sidebarOpen && (
         <button
           className="mobile-scrim"
-          aria-label="关闭导航"
+          aria-label={t('关闭导航', 'Close navigation')}
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -126,22 +153,22 @@ export default function App() {
             setWorkspace('tasks');
             setSidebarOpen(false);
           }}
-          aria-label="DeskPilot 首页"
+          aria-label={t('DeskPilot 首页', 'DeskPilot home')}
         >
           <Brand />
           <span>
-            DeskPilot<small>企业 IT 服务台</small>
+            DeskPilot<small>{t('企业 IT 服务台', 'Enterprise IT service desk')}</small>
           </span>
         </a>
         <button
           className="mobile-close icon-button"
-          aria-label="关闭导航"
+          aria-label={t('关闭导航', 'Close navigation')}
           onClick={() => setSidebarOpen(false)}
         >
           <PanelLeftClose size={20} />
         </button>
-        <div className="workspace-label">工作区</div>
-        <nav className="main-nav" aria-label="工作区导航">
+        <div className="workspace-label">{t('工作区', 'Workspace')}</div>
+        <nav className="main-nav" aria-label={t('工作区导航', 'Workspace navigation')}>
           {navigation.map((item) => (
             <button
               key={item.id}
@@ -162,12 +189,12 @@ export default function App() {
         <div className="sidebar-bottom">
           <button className="sidebar-link" onClick={() => setConfigOpen(true)}>
             <Settings2 size={17} />
-            运行配置
+            {t('运行配置', 'Configuration')}
             <ArrowRight size={15} />
           </button>
           <button className="sidebar-link" onClick={() => setHelp(true)}>
             <CircleHelp size={17} />
-            使用说明
+            {t('使用说明', 'Getting started')}
             <ArrowRight size={15} />
           </button>
         </div>
@@ -177,7 +204,7 @@ export default function App() {
           <div className="header-title">
             <button
               className="icon-button mobile-menu"
-              aria-label="打开导航"
+              aria-label={t('打开导航', 'Open navigation')}
               onClick={() => setSidebarOpen(true)}
             >
               <Menu size={22} />
@@ -186,37 +213,51 @@ export default function App() {
           </div>
           <div className="header-actions">
             <button
+              className="language-toggle"
+              type="button"
+              lang={locale === 'en' ? 'zh-CN' : 'en'}
+              aria-label={
+                locale === 'en' ? 'Switch language to Chinese (中文)' : '切换为英文 (English)'
+              }
+              onClick={() => setLocale(locale === 'en' ? 'zh-CN' : 'en')}
+            >
+              {locale === 'en' ? '中文' : 'English'}
+            </button>
+            <button
               className={`mode-badge ${data.mode === 'demo' ? 'demo' : 'cloud'}`}
               onClick={() => setConfigOpen(true)}
             >
               <span className="live-dot" />
-              {data.mode === 'demo' ? '本地演示' : '云端模式'}
-              {data.mode === 'demo' && <span className="mode-detail">· BM25 真实检索</span>}
+              {data.mode === 'demo' ? t('本地演示', 'Local demo') : t('云端模式', 'Cloud mode')}
+              {data.mode === 'demo' && (
+                <span className="mode-detail">{t('· BM25 真实检索', '· Live BM25 retrieval')}</span>
+              )}
               <ChevronDown size={12} />
             </button>
             <div className="header-divider" />
             <div className="identity-control">
-              <span className="avatar">{data.user.name.slice(0, 1)}</span>
+              <span className="avatar">{displayUserName(data.user).slice(0, 1)}</span>
               <div>
                 <label htmlFor="identity">
-                  {switching ? '切换中…' : '演示身份'}
+                  {switching ? t('切换中…', 'Switching…') : t('演示身份', 'Demo identity')}
                   <ChevronDown size={11} />
                 </label>
                 <select
                   id="identity"
-                  aria-label="选择演示身份"
+                  aria-label={t('选择演示身份', 'Select demo identity')}
                   disabled={switching}
                   value={data.user.id}
                   onChange={(event) => void switchUser(event.target.value)}
                 >
                   {data.users.map((user) => (
                     <option key={user.id} value={user.id}>
-                      {user.name} ·{' '}
+                      {displayUserName(user)} ·{' '}
                       {(
-                        { employee: '员工', it: 'IT 支持', admin: '管理员' } as Record<
-                          string,
-                          string
-                        >
+                        {
+                          employee: t('员工', 'Employee'),
+                          it: t('IT 支持', 'IT support'),
+                          admin: t('管理员', 'Administrator'),
+                        } as Record<string, string>
                       )[user.role] || user.role}
                     </option>
                   ))}
@@ -262,12 +303,14 @@ export default function App() {
       {configOpen && <Configuration user={data.user} mode={data.mode} onClose={closeConfig} />}
       {source && (
         <Modal
-          title={source.title || source.document?.title || '知识来源'}
+          title={source.title || source.document?.title || t('知识来源', 'Knowledge source')}
           onClose={closeSource}
           wide
         >
           {source.loading ? (
-            <Loading>正在核验权限并读取原文…</Loading>
+            <Loading>
+              {t('正在核验权限并读取原文…', 'Checking access and loading the source…')}
+            </Loading>
           ) : source.error ? (
             <ErrorBox error={source.error} />
           ) : (
@@ -275,10 +318,13 @@ export default function App() {
               <div className="source-detail-meta">
                 <span>
                   <BookOpen size={15} />
-                  版本 {source.version || source.document?.version || '—'}
+                  {t('版本', 'Version')}
+                  {source.version || source.document?.version || '—'}
                 </span>
-                <span>{source.anchor || source.chunk?.anchor || '原文片段'}</span>
-                <Badge tone="good">已核验访问权限</Badge>
+                <span>
+                  {source.anchor || source.chunk?.anchor || t('原文片段', 'Source excerpt')}
+                </span>
+                <Badge tone="good">{t('已核验访问权限', 'Access verified')}</Badge>
               </div>
               <div className="source-excerpt">
                 <Markdown
@@ -286,13 +332,18 @@ export default function App() {
                     source.text ||
                     source.content ||
                     source.chunk?.text ||
-                    '该来源没有返回原文内容。'
+                    t('该来源没有返回原文内容。', 'This source did not return any original text.')
                   }
                 />
               </div>
               <div className="source-detail-footer">
                 <ShieldCheck size={15} />
-                <span>原文按当前身份的访问权限提供。</span>
+                <span>
+                  {t(
+                    '原文按当前身份的访问权限提供。',
+                    'Source text is shown according to your current access permissions.',
+                  )}
+                </span>
               </div>
             </>
           )}
@@ -300,8 +351,8 @@ export default function App() {
       )}
       {trace && (
         <Modal
-          title="检索与执行轨迹"
-          subtitle={trace.id ? `运行 ${trace.id}` : undefined}
+          title={t('检索与执行轨迹', 'Retrieval & execution trace')}
+          subtitle={trace.id ? t(`运行 ${trace.id}`, `Run ${trace.id}`) : undefined}
           onClose={closeTrace}
           drawer
         >
@@ -309,32 +360,44 @@ export default function App() {
         </Modal>
       )}
       {help && (
-        <Modal title="使用说明" onClose={() => setHelp(false)} wide>
+        <Modal title={t('使用说明', 'Getting started')} onClose={() => setHelp(false)} wide>
           <div className="help-steps">
             {[
               [
                 MessageSquare,
                 '01',
-                '描述问题',
-                '告诉助手产品、版本和现象。证据不足时，助手会询问补充信息或明确说明未找到依据。',
+                t('描述问题', 'Describe the issue'),
+                t(
+                  '告诉助手产品、版本和现象。证据不足时，助手会询问补充信息或明确说明未找到依据。',
+                  'Include the product, version, and symptoms. The assistant asks for details or explains when evidence is missing.',
+                ),
               ],
               [
                 BookOpen,
                 '02',
-                '核对来源',
-                '回答下方的来源卡片可以打开原文；检索轨迹展示实际召回、权限检查和处理阶段。',
+                t('核对来源', 'Check the sources'),
+                t(
+                  '回答下方的来源卡片可以打开原文；检索轨迹展示实际召回、权限检查和处理阶段。',
+                  'Open source cards below an answer to read the original text. The trace shows retrieval, access checks, and processing stages.',
+                ),
               ],
               [
                 ShieldCheck,
                 '03',
-                '确认行动',
-                '工具操作遵循角色和审批策略。IT 支持与管理员可以处理审批和服务工单。',
+                t('确认行动', 'Confirm actions'),
+                t(
+                  '工具操作遵循角色和审批策略。IT 支持与管理员可以处理审批和服务工单。',
+                  'Tools follow role and approval policies. IT support and administrators can handle approvals and service tickets.',
+                ),
               ],
               [
                 GitBranch,
                 '04',
-                '沉淀知识',
-                '工单解决后可以生成知识候选。审核发布后，解决方案才会加入后续检索。',
+                t('沉淀知识', 'Share team knowledge'),
+                t(
+                  '工单解决后可以生成知识候选。审核发布后，解决方案才会加入后续检索。',
+                  'Resolved tickets can become knowledge candidates. A solution enters retrieval only after review and publication.',
+                ),
               ],
             ].map(([Icon, number, title, description]) => {
               const HelpIcon = Icon as typeof MessageSquare;
@@ -354,11 +417,14 @@ export default function App() {
           </div>
           <div className="form-note">
             <LockKeyhole size={16} />
-            不同身份拥有独立的访问范围、任务记录和个人记忆。
+            {t(
+              '不同身份拥有独立的访问范围、任务记录和个人记忆。',
+              'Each identity has its own access scope, task history, and personal memory.',
+            )}
           </div>
           <div className="modal-actions">
             <Button onClick={() => setHelp(false)}>
-              开始使用
+              {t('开始使用', 'Get started')}
               <ArrowRight size={15} />
             </Button>
           </div>

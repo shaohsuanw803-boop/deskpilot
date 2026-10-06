@@ -1,3 +1,4 @@
+import { translate as t, useI18n } from './i18n';
 import { useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import {
@@ -14,38 +15,52 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { array, display, type Data } from './api';
 
-export const labels: Record<string, string> = {
-  completed: '已完成',
-  ready: '可用',
-  published: '已发布',
-  active: '使用中',
-  evaluated: '已评测',
-  passed: '通过',
-  succeeded: '成功',
-  awaiting_approval: '等待审批',
-  needs_clarification: '需要补充',
-  no_evidence: '暂无依据',
-  degraded: '降级运行',
-  failed: '失败',
-  rejected: '已拒绝',
-  pending: '待处理',
-  processing: '处理中',
-  staged: '待发布',
-  draft: '草稿',
-  withdrawn: '已撤回',
-  approved: '已批准',
-  consumed: '已执行',
-  prepared: '已解析，待审核',
-  staging: '暂存版本',
-  running: '执行中',
-  resolved: '已解决',
-  open: '处理中',
-  expired: '已过期',
-  employee: '员工',
-  it: 'IT 支持',
-  admin: '管理员',
-  candidate: '知识候选',
-};
+function statusLabels(): Record<string, string> {
+  return {
+    completed: t('已完成', 'Completed'),
+    ready: t('可用', 'Ready'),
+    published: t('已发布', 'Published'),
+    active: t('使用中', 'Active'),
+    evaluated: t('已评测', 'Evaluated'),
+    passed: t('通过', 'Passed'),
+    succeeded: t('成功', 'Succeeded'),
+    awaiting_approval: t('等待审批', 'Awaiting approval'),
+    needs_clarification: t('需要补充', 'Needs clarification'),
+    no_evidence: t('暂无依据', 'No evidence'),
+    degraded: t('降级运行', 'Degraded'),
+    failed: t('失败', 'Failed'),
+    rejected: t('已拒绝', 'Rejected'),
+    pending: t('待处理', 'Pending'),
+    processing: t('处理中', 'In progress'),
+    staged: t('待发布', 'Staged'),
+    draft: t('草稿', 'Draft'),
+    withdrawn: t('已撤回', 'Withdrawn'),
+    approved: t('已批准', 'Approved'),
+    consumed: t('已执行', 'Executed'),
+    prepared: t('已解析，待审核', 'Parsed · awaiting review'),
+    staging: t('暂存版本', 'Staged version'),
+    running: t('执行中', 'Running'),
+    resolved: t('已解决', 'Resolved'),
+    open: t('处理中', 'In progress'),
+    expired: t('已过期', 'Expired'),
+    employee: t('员工', 'Employee'),
+    it: t('IT 支持', 'IT support'),
+    admin: t('管理员', 'Administrator'),
+    candidate: t('知识候选', 'Candidate'),
+    interrupted: t('已中断', 'Interrupted'),
+    cancelled: t('已取消', 'Cancelled'),
+  };
+}
+export function statusLabel(value: string): string {
+  return statusLabels()[value] || value;
+}
+// Backward-compatible property reads resolve the active locale at render time.
+export const labels: Record<string, string> = new Proxy(
+  {},
+  {
+    get: (_target, key) => (typeof key === 'string' ? statusLabels()[key] : undefined),
+  },
+);
 export function Badge({
   value,
   children,
@@ -55,6 +70,7 @@ export function Badge({
   children?: ReactNode;
   tone?: string;
 }) {
+  useI18n();
   const kind =
     tone ||
     ([
@@ -86,7 +102,7 @@ export function Badge({
   return (
     <span className={`badge ${kind}`}>
       <span className="badge-dot" />
-      {children || labels[value || ''] || value || '未知'}
+      {children || labels[value || ''] || value || t('未知', 'Unknown')}
     </span>
   );
 }
@@ -129,15 +145,21 @@ export function Empty({
   );
 }
 export function ErrorBox({ error, retry }: { error: string; retry?: () => void }) {
+  useI18n();
   return error ? (
     <div className="error-box" role="alert">
       <CircleAlert size={18} />
       <span>{error}</span>
-      {retry && <button onClick={retry}>重试</button>}
+      {retry && <button onClick={retry}>{t('重试', 'Retry')}</button>}
     </div>
   ) : null;
 }
-export function Loading({ children = '正在载入工作台…' }: { children?: ReactNode }) {
+export function Loading({
+  children = t('正在载入工作台…', 'Loading workspace…'),
+}: {
+  children?: ReactNode;
+}) {
+  useI18n();
   return (
     <div className="loading">
       <LoaderCircle size={20} className="spin" />
@@ -190,6 +212,7 @@ export function Modal({
   wide?: boolean;
   drawer?: boolean;
 }) {
+  useI18n();
   const ref = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
@@ -247,7 +270,11 @@ export function Modal({
             {subtitle && <div className="eyebrow">{subtitle}</div>}
             <h2>{title}</h2>
           </div>
-          <button className="icon-button" aria-label="关闭窗口" onClick={onClose}>
+          <button
+            className="icon-button"
+            aria-label={t('关闭窗口', 'Close dialog')}
+            onClick={onClose}
+          >
             <X size={21} />
           </button>
         </div>
@@ -257,12 +284,15 @@ export function Modal({
   );
 }
 export function Markdown({ text }: { text: string }) {
+  useI18n();
   return (
     <div className="markdown">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
-          img: ({ alt }) => <span className="markdown-image-label">[{alt || '图片'}]</span>,
+          img: ({ alt }) => (
+            <span className="markdown-image-label">[{alt || t('图片', 'Image')}]</span>
+          ),
           a: ({ children, href }) => (
             <a href={href} target="_blank" rel="noopener noreferrer">
               {children}
@@ -284,15 +314,16 @@ export function SourceCard({
   index: number;
   onOpen: (id: string) => void;
 }) {
+  useI18n();
   const id = source.id || source.chunk_id;
   return (
     <button className="source-card" onClick={() => onOpen(id)} disabled={!id}>
       <span className="source-number">{String(index + 1).padStart(2, '0')}</span>
       <div>
-        <strong>{source.title || '知识来源'}</strong>
+        <strong>{source.title || t('知识来源', 'Knowledge source')}</strong>
         <span>
           {source.version ? `v${source.version} · ` : ''}
-          {source.anchor || source.document_id || '查看原文片段'}
+          {source.anchor || source.document_id || t('查看原文片段', 'View source excerpt')}
         </span>
       </div>
       <ArrowUpRight size={17} />
@@ -300,6 +331,7 @@ export function SourceCard({
   );
 }
 export function TraceView({ data }: { data: Data }) {
+  useI18n();
   const retrieval = data.retrieval || data;
   const trace = retrieval.trace || {};
   return (
@@ -312,11 +344,11 @@ export function TraceView({ data }: { data: Data }) {
         </span>
       </div>
       <div className="trace-section">
-        <span className="field-caption">原始问题</span>
-        <p>{retrieval.query || data.message || '未记录'}</p>
+        <span className="field-caption">{t('原始问题', 'Original question')}</span>
+        <p>{retrieval.query || data.message || t('未记录', 'Not recorded')}</p>
         {retrieval.rewritten_query && (
           <>
-            <span className="field-caption">检索问题</span>
+            <span className="field-caption">{t('检索问题', 'Retrieval query')}</span>
             <p>{retrieval.rewritten_query}</p>
           </>
         )}
@@ -328,16 +360,16 @@ export function TraceView({ data }: { data: Data }) {
             <h3>
               {(
                 {
-                  permission_filter: '权限过滤',
-                  rewrite: '问题改写',
-                  retrieval: '候选召回',
-                  rerank: '重排',
-                  context: '上下文组装',
-                  generation: '回答生成',
-                  outbound: '出站检查',
-                  citation_validation: '引用验证',
-                  bm25: 'BM25 检索',
-                  confidence: '证据置信度',
+                  permission_filter: t('权限过滤', 'Access filter'),
+                  rewrite: t('问题改写', 'Query rewrite'),
+                  retrieval: t('候选召回', 'Candidate retrieval'),
+                  rerank: t('重排', 'Reranking'),
+                  context: t('上下文组装', 'Context assembly'),
+                  generation: t('回答生成', 'Answer generation'),
+                  outbound: t('出站检查', 'Outbound check'),
+                  citation_validation: t('引用验证', 'Citation validation'),
+                  bm25: t('BM25 检索', 'BM25 retrieval'),
+                  confidence: t('证据置信度', 'Evidence sufficiency'),
                 } as Record<string, string>
               )[key] || key}
             </h3>
@@ -346,12 +378,18 @@ export function TraceView({ data }: { data: Data }) {
         </div>
       ))}
       {!Object.keys(trace).length && (
-        <Empty title="尚无检索阶段记录">执行一次查询后，这里会显示实际运行轨迹。</Empty>
+        <Empty title={t('尚无检索阶段记录', 'No retrieval stages recorded')}>
+          {t(
+            '执行一次查询后，这里会显示实际运行轨迹。',
+            'Run a query to see its execution trace here.',
+          )}
+        </Empty>
       )}
       {array(data.events).length > 0 && (
         <details className="raw-details">
           <summary>
-            查看完整运行事件 <ChevronRight size={15} />
+            {t('查看完整运行事件', 'View all run events')}
+            <ChevronRight size={15} />
           </summary>
           <pre>{display(data.events)}</pre>
         </details>

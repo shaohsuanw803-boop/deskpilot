@@ -1,26 +1,35 @@
-# 参与贡献
+# Contributing
 
-请先说明可复现问题、操作系统、Python/Node 版本、demo/cloud 模式和脱敏运行 ID。不要提交 API Key、真实企业文档、个人信息或供应商完整响应。
+[简体中文](docs/CONTRIBUTING.zh-CN.md) · [Project README](README.md)
 
-## 开发与验证
+Describe a reproducible issue, operating system, Python/Node versions, demo/cloud mode and a redacted run ID. Never include API keys, real company documents, personal information or complete provider responses.
+
+## Development and verification
 
 ```bash
 uv sync --frozen --extra dev
-# 没有 uv 时：python -m pip install -r requirements.lock.txt
-# 然后：python -m pip install --no-deps -e .
+# Without uv: python -m pip install -r requirements.lock.txt
+# Then: python -m pip install --no-deps -e .
 python -m pytest -q
 python -m ruff check backend tests scripts
 python scripts/evaluate.py --split dev
 cd frontend
 npm ci
+npm run test:i18n
 npm run build
 npm run format:check
 ```
 
-功能修改保持单一目的。权限、文档生命周期、审批、记忆删除、外发或预算变更必须添加能复现失效的测试；不要仅测试与实现相同的常量。更改提供商请求/响应格式时使用 mock HTTP 契约测试，PR CI 不调用付费接口。
+Keep changes focused. Changes to permissions, document lifecycle, approvals, memory deletion, outbound processing or budgets need tests that reproduce an actual failure, not assertions that mirror implementation constants. Provider request/response changes require mock HTTP contract tests. Pull-request CI never uses paid credentials.
 
-修改检索策略先使用 dev 集，记录为什么改变和实际指标差异。不要查看 test 标签后添加仅对该问题有效的分支。`fixtures/eval` 不得被后端运行代码读取。若调整语料，运行 `tests/test_corpus_integrity.py`，保留虚构声明和 family 隔离。
+Tune retrieval on the development set and record the reason and measured difference. Do not inspect held-out labels and add a branch specific to that question. Backend runtime code must not read `fixtures/eval`. If the corpus changes, run the corpus-integrity tests and preserve fictional-data notices and family separation.
 
-新技能版本需负责人、工具许可、评测与激活记录；新共享知识需审核。文档应说明能力与限制，不把模拟适配器写成真实企业连接器。
+New skills require owners, tool permissions, evaluations and activation records. Shared knowledge requires review. Describe capabilities and limits honestly: simulated adapters are not production connectors.
 
-提交 PR 时列出问题、用户可见结果、验证命令、实际通过/失败及未测部分。依赖与模型更新尽量分开，确保问题可回退。使用 MIT 许可贡献代码，并保留引用资料或第三方代码的许可。
+## Language changes
+
+English is the initial UI language. Chinese requires an explicit user choice; never infer it from the browser. Add both English and Chinese UI text, including validation, empty states and accessibility labels. Keep source evidence, user-authored data and historical facts unchanged. Locale is a presentation preference, not authorization. New task language must survive approval and resumption; changing the UI must not reset drafts or submit operations.
+
+Use `frontend/src/i18n.ts` for UI text and the backend locale helpers for system messages. Do not add cloud translation as a side effect of switching languages. Keep the English and Chinese README architecture tables consistent, and distinguish translated documentation from dated original evaluation reports.
+
+In a PR, describe the problem, resulting behavior, commands run, actual results and anything untested. Separate model and dependency upgrades where practical so changes can be rolled back. Contributions use the MIT license; retain third-party notices.

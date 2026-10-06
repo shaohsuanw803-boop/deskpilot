@@ -1,5 +1,7 @@
 # 记忆、续办与上下文
 
+[English](en/memory-design.md) · [中文首页](../README.zh-CN.md)
+
 DeskPilot 不把所有聊天永久塞进提示词。SQLite 的工单和运行记录是任务事实来源，LangGraph 检查点用于恢复执行；个人偏好只在用户确认后保存；团队经验必须转成候选知识并审核发布。
 
 ## 每次运行重新构造上下文

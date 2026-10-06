@@ -12,6 +12,7 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command, interrupt
 
 from .db import new_id, now
+from .localization import error_text, system_text
 from .policy import POLICY_VERSION, USERS, PolicyError, check_outbound, own_or_staff, redact, require_role
 from .skills import SkillRegistry
 
@@ -24,6 +25,7 @@ class RunState(TypedDict, total=False):
     ticket_id: str | None
     cloud_allowed: bool
     mcp_server: str | None
+    locale: str
     diagnostics: list
     route: str
     skill_id: str
@@ -78,6 +80,8 @@ class DeskService:
         with self.store.transaction():
             run = self.store.get('run', run_id)
             events = run.setdefault('events', [])
+            if isinstance(detail, str):
+                detail = system_text(detail, run.get('locale', 'zh-CN'))
             events.append({'id': len(events) + 1, 'stage': stage, 'detail': redact(detail), 'at': now()})
             self.store.put('run', run)
 
@@ -95,7 +99,10 @@ class DeskService:
                 'policy_version': POLICY_VERSION})
 
     def _route(self, state):
-        access = bool(re.search(r'(申请|开通|获取).{0,18}(权限|许可|账号)|软件申请', state['message']))
+        access = bool(re.search(
+            r'(申请|开通|获取).{0,18}(权限|许可|账号)|软件申请|'
+            r'\b(?:request|need|apply\s+for)\b.{0,60}\b(?:access|permission|license|licence|account)\b',
+            state['message'], re.I))
         skill_id = 'access-request' if access else ('diagnose-connected' if state.get('mcp_server') else 'diagnose')
         package = self.skills.get(skill_id)
         run = self.store.get('run', state['run_id'])
@@ -189,7 +196,7 @@ class DeskService:
         return {'messages': messages, 'task': task, 'preferences': preferences, 'dependencies': dependencies,
                 'skill': {'id': package['id'], 'version': package['version'],
                           'instructions': package['instructions']},
-                'cloud_allowed': state.get('cloud_allowed', True)}
+                'cloud_allowed': state.get('cloud_allowed', True), 'locale': state.get('locale', 'zh-CN')}
 
     def _preflight(self, state):
         server = state.get('mcp_server')
@@ -205,7 +212,8 @@ class DeskService:
                 result = self.harness.call(user, server, tool, arguments, state['run_id'])
                 diagnostics.append(result)
             except PolicyError as exc:
-                diagnostics.append({'tool': tool, 'status': 'failed', 'error': str(exc), 'cloud_allowed': False})
+                diagnostics.append({'tool': tool, 'status': 'failed',
+                                    'error': error_text(str(exc), state.get('locale', 'zh-CN')), 'cloud_allowed': False})
         self._event(state['run_id'], 'mcp_preflight', {'server': server,
                     'succeeded': sum(d['status'] == 'succeeded' for d in diagnostics), 'local_only': True})
         # MCP results stay separate from answers, citations, history and cloud payloads.
@@ -233,7 +241,7 @@ class DeskService:
         if existing:
             return {'approval_id': existing[0]['id']}
         match = re.search(r'Figma|Visio|Office|VPN|Adobe Acrobat|Project', state['message'], re.I)
-        application = match.group(0) if match else '待 IT 确认的软件'
+        application = match.group(0) if match else system_text('待 IT 确认的软件', state.get('locale', 'zh-CN'))
         item = {'id': new_id('apr'), 'run_id': state['run_id'], 'requester_id': state['user_id'],
                 'tool': 'access.grant', 'parameters': {'application': application, 'access': 'standard',
                 'reason': redact(state['message'][:300])}, 'status': 'pending',
@@ -252,7 +260,7 @@ class DeskService:
         approval = self.store.get('approval', state['approval_id'])
         if approval['status'] == 'pending':
             interrupt({'approval_id': approval['id'], 'parameters': approval['parameters'],
-                       'message': '请 IT 审核本次模拟权限申请'})
+                       'message': system_text('请 IT 审核本次模拟权限申请', state.get('locale', 'zh-CN'))})
             approval = self.store.get('approval', state['approval_id'])
         return {'decision': approval['status']}
 
@@ -274,13 +282,15 @@ class DeskService:
             if receipt:
                 return {'status': 'completed', 'answer': receipt['message'], 'citations': []}
             if approval['status'] == 'rejected':
-                return {'status': 'rejected', 'answer': 'IT 已拒绝本次申请，未执行权限变更。', 'citations': []}
+                return {'status': 'rejected', 'answer': system_text('IT 已拒绝本次申请，未执行权限变更。', state.get('locale', 'zh-CN')), 'citations': []}
             if approval['status'] != 'approved':
                 raise PolicyError('操作尚未获得有效审批。')
             self._validate_approval(approval)
             actor = USERS[approval['approved_by']]
             self._tool(state, 'access.grant', actor)
             message = f"已完成 {approval['parameters']['application']} 标准权限的模拟开通。没有修改真实企业系统。"
+            if state.get('locale', 'zh-CN') == 'en':
+                message = f"Simulated standard access to {approval['parameters']['application']} is complete. No real enterprise system was modified."
             self.store.put('grant', {'id': approval['id'], 'run_id': state['run_id'],
                                     'user_id': state['user_id'], 'parameters': approval['parameters'],
                                     'message': message, 'simulated': True})
@@ -293,7 +303,7 @@ class DeskService:
         run = self.store.get('run', run_id)
         if '__interrupt__' in result:
             run.update(status='awaiting_approval', approval_id=result.get('approval_id'),
-                       answer='申请已准备好，等待 IT 审批。你可以离开页面，稍后继续。')
+                       answer=system_text('申请已准备好，等待 IT 审批。你可以离开页面，稍后继续。', run.get('locale', 'zh-CN')))
         else:
             for key in ('answer', 'status', 'citations', 'retrieval', 'approval_id', 'diagnostics'):
                 if key in result:
@@ -301,8 +311,10 @@ class DeskService:
         run['completed_at'] = now() if run['status'] != 'awaiting_approval' else None
         return self.store.put('run', run)
 
-    def run(self, user, message, thread_id=None, ticket_id=None, cloud_allowed=True, mcp_server=None):
+    def run(self, user, message, thread_id=None, ticket_id=None, cloud_allowed=True, mcp_server=None, locale='en'):
         with self.lock:
+            if locale not in ('en', 'zh-CN'):
+                raise ValueError('Unsupported locale; use en or zh-CN.')
             if not message.strip() or len(message) > 8000:
                 raise PolicyError('问题不能为空，且最多 8,000 个字符。')
             thread_id = thread_id or new_id('thread')
@@ -317,19 +329,19 @@ class DeskService:
             run_id = new_id('run')
             thread = thread or {'id': thread_id, 'user_id': user.id, 'initial_run_id': run_id,
                                 'progress_run_ids': []}
-            if re.search(r'已经|已尝试|已完成|仍然|目前|现在|重启|更换', message):
+            if re.search(r'已经|已尝试|已完成|仍然|目前|现在|重启|更换|\b(?:already|tried|completed|still|restarted|rebooted|now)\b', message, re.I):
                 thread['progress_run_ids'] = (thread.get('progress_run_ids', []) + [run_id])[-8:]
             self.store.put('thread', thread)
             state = {'run_id': run_id, 'user_id': user.id, 'message': message.strip(),
                      'thread_id': thread_id, 'ticket_id': ticket_id, 'cloud_allowed': cloud_allowed,
-                     'mcp_server': mcp_server}
+                     'mcp_server': mcp_server, 'locale': locale}
             self.store.put('run', {**state, 'id': run_id, 'status': 'running', 'events': [],
                                    'answer': '', 'citations': [], 'retrieval': {}, 'steps': 0})
             try:
                 result = self.graph.invoke(state, self._config(run_id), durability='sync')
                 return self._finish(run_id, result)
             except Exception as exc:
-                error = str(redact(str(exc))) if isinstance(exc, (PolicyError, ValueError)) else '任务执行失败，请查看运行记录并重试。'
+                error = error_text(str(redact(str(exc))), locale) if isinstance(exc, (PolicyError, ValueError)) else system_text('任务执行失败，请查看运行记录并重试。', locale)
                 self.store.audit(user.id, 'run.failed', run_id, {'type': type(exc).__name__, 'reason': error})
                 return self.store.put('run', {**self.store.get('run', run_id), 'status': 'failed', 'answer': error})
 
@@ -371,12 +383,15 @@ class DeskService:
                     elif snapshot.values.get('status'):
                         self._finish(run['id'], snapshot.values)
                     else:
-                        self.store.put('run', {**run, 'status': 'failed', 'answer': '服务中断发生在检查点保存前，请重新提交。'})
+                        self.store.put('run', {**run, 'status': 'failed', 'answer': system_text('服务中断发生在检查点保存前，请重新提交。', run.get('locale', 'zh-CN'))})
                 except Exception as exc:
                     self.store.audit('system', 'recovery.failed', run['id'], {'type': type(exc).__name__})
                     detail = str(redact(str(exc))) if isinstance(exc, PolicyError) else '恢复执行失败'
+                    answer = f'{detail}，请重新提交任务或联系 IT。'
+                    if run.get('locale', 'zh-CN') == 'en':
+                        answer = error_text(detail, 'en') + ' Submit the task again or contact IT.'
                     self.store.put('run', {**self.store.get('run', run['id']), 'status': 'failed',
-                        'answer': f'{detail}，请重新提交任务或联系 IT。', 'completed_at': now()})
+                        'answer': answer, 'completed_at': now()})
 
     def memories(self, user):
         return [m for m in self.store.list('memory') if m['user_id'] == user.id and not m.get('deleted')]

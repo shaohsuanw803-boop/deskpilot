@@ -1,13 +1,15 @@
-## 问题与改动
+## Problem and change / 问题与改动
 
-说明可复现的问题和修改后的行为。
+Describe the reproducible problem and the resulting behavior. / 说明问题和修改后的行为。
 
-## 验证
+## Validation / 验证
 
-- 执行的命令与实际结果：
-- 未验证的行为（例如真实云端调用）：
+- Commands and actual results / 执行命令与实测结果:
+- Untested behavior, such as paid cloud calls / 未验证部分:
 
-## 影响
+## Impact / 影响
 
-涉及权限、外发、知识版本、审批、预算或记忆删除时，说明对应回归用例。
-请勿提交真实密钥、个人信息、企业资料或本地运行数据。
+Identify regressions covered for permissions, outbound data, knowledge versions, approvals, budgets, memory deletion or language persistence.
+
+Never commit real keys, personal information, company documents or local runtime data.
+请勿提交真实密钥、个人信息、企业资料或运行数据。

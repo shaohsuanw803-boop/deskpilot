@@ -1,3 +1,4 @@
+import { useI18n, translate } from './i18n';
 import { useMemo, useRef, useState } from 'react';
 import {
   ArrowDownToLine,
@@ -24,6 +25,7 @@ import {
 import {
   array,
   date,
+  displayUserName,
   errorText,
   get,
   isStaff,
@@ -44,30 +46,42 @@ type Props = {
   onSource: (id: string) => void;
   onTrace: (data: Data) => void;
 };
-const examples = [
-  {
-    icon: Wifi,
-    category: '连接与网络',
-    title: 'VPN 连接提示 809，怎么排查？',
-    prompt: '我的 Windows 11 电脑连接 VPN 时提示错误 809，应该怎么排查？',
-  },
-  {
-    icon: BookOpen,
-    category: '办公软件',
-    title: 'Office 无法激活，该怎么办？',
-    prompt: '我的 Office 无法激活，如何排查？',
-  },
-  {
-    icon: KeyRound,
-    category: '权限与申请',
-    title: '我想申请安装一个软件',
-    prompt: '我需要申请安装软件的权限，请告诉我申请流程。',
-  },
-];
+
 function promptOf(run: Data) {
-  return run.message || run.query || run.retrieval?.query || 'IT 服务请求';
+  const t = translate;
+  return run.message || run.query || run.retrieval?.query || t('IT 服务请求', 'IT service request');
 }
 export default function Tasks({ user, mode, revision, onChange, onSource, onTrace }: Props) {
+  const { t, locale } = useI18n();
+  const examples = [
+    {
+      icon: Wifi,
+      category: t('连接与网络', 'Connectivity'),
+      title: t('VPN 连接提示 809，怎么排查？', 'How do I fix VPN error 809?'),
+      prompt: t(
+        '我的 Windows 11 电脑连接 VPN 时提示错误 809，应该怎么排查？',
+        'My Windows 11 computer gets VPN error 809. How can I troubleshoot it?',
+      ),
+    },
+    {
+      icon: BookOpen,
+      category: t('办公软件', 'Office apps'),
+      title: t('Office 无法激活，该怎么办？', 'Office will not activate. What next?'),
+      prompt: t(
+        '我的 Office 无法激活，如何排查？',
+        'My Office will not activate. How can I troubleshoot it?',
+      ),
+    },
+    {
+      icon: KeyRound,
+      category: t('权限与申请', 'Access requests'),
+      title: t('我想申请安装一个软件', 'I need permission to install software'),
+      prompt: t(
+        '我需要申请安装软件的权限，请告诉我申请流程。',
+        'I need permission to install software. What is the approval process?',
+      ),
+    },
+  ];
   const [view, setView] = useState('chat');
   const runs = useResource<{ items: Data[] }>('/runs', revision);
   const tickets = useResource<{ items: Data[] }>('/tickets', revision);
@@ -80,7 +94,7 @@ export default function Tasks({ user, mode, revision, onChange, onSource, onTrac
   const connectors = useResource<{ items: Data[] }>('/connectors', revision);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState('');
-  const [notice, setNotice] = useState('');
+  const [notice, setNotice] = useState<[string, string] | null>(null);
   const [ticketDraft, setTicketDraft] = useState<Data | null>(null);
   const [resolveTicket, setResolveTicket] = useState<Data | null>(null);
   const [resolution, setResolution] = useState('');
@@ -114,6 +128,7 @@ export default function Tasks({ user, mode, revision, onChange, onSource, onTrac
     try {
       const run = await post('/runs', {
         message: question,
+        locale,
         ...(selected?.thread_id ? { thread_id: selected.thread_id } : {}),
         cloud_allowed: cloudAllowed,
         mcp_server: mcpServer || null,
@@ -127,10 +142,10 @@ export default function Tasks({ user, mode, revision, onChange, onSource, onTrac
       setSending(false);
     }
   }
-  async function action(key: string, work: () => Promise<unknown>, success: string) {
+  async function action(key: string, work: () => Promise<unknown>, success: [string, string]) {
     setBusy(key);
     setError('');
-    setNotice('');
+    setNotice(null);
     try {
       await work();
       onChange();
@@ -156,7 +171,11 @@ export default function Tasks({ user, mode, revision, onChange, onSource, onTrac
   return (
     <div className="task-workspace">
       <div className="task-topbar">
-        <div className="workspace-tabs" role="tablist" aria-label="服务工作区">
+        <div
+          className="workspace-tabs"
+          role="tablist"
+          aria-label={t('服务工作区', 'Service workspace')}
+        >
           <button
             className={view === 'chat' ? 'active' : ''}
             onClick={() => setView('chat')}
@@ -164,7 +183,7 @@ export default function Tasks({ user, mode, revision, onChange, onSource, onTrac
             aria-selected={view === 'chat'}
           >
             <MessageSquare size={16} />
-            对话助手
+            {t('对话助手', 'Assistant')}
           </button>
           <button
             className={view === 'tickets' ? 'active' : ''}
@@ -173,7 +192,8 @@ export default function Tasks({ user, mode, revision, onChange, onSource, onTrac
             aria-selected={view === 'tickets'}
           >
             <Ticket size={16} />
-            服务工单<span className="count">{tickets.data?.items.length ?? '—'}</span>
+            {t('服务工单', 'Tickets')}
+            <span className="count">{tickets.data?.items.length ?? '—'}</span>
           </button>
           <button
             className={view === 'approvals' ? 'active' : ''}
@@ -182,7 +202,7 @@ export default function Tasks({ user, mode, revision, onChange, onSource, onTrac
             aria-selected={view === 'approvals'}
           >
             <ShieldCheck size={16} />
-            {isStaff(user) ? '审批队列' : '我的审批'}
+            {isStaff(user) ? t('审批队列', 'Approval queue') : t('我的审批', 'My approvals')}
             {pendingApprovals.length > 0 && (
               <span className="count accent">{pendingApprovals.length}</span>
             )}
@@ -199,15 +219,18 @@ export default function Tasks({ user, mode, revision, onChange, onSource, onTrac
           }}
         >
           <Plus size={16} />
-          新建对话
+          {t('新建对话', 'New conversation')}
         </button>
       </div>
       <ErrorBox error={error} />
       {notice && (
         <div className="notice" role="status">
           <Check size={16} />
-          {notice}
-          <button aria-label="关闭提示" onClick={() => setNotice('')}>
+          {t(...notice)}
+          <button
+            aria-label={t('关闭提示', 'Dismiss notification')}
+            onClick={() => setNotice(null)}
+          >
             <X size={14} />
           </button>
         </div>
@@ -222,10 +245,15 @@ export default function Tasks({ user, mode, revision, onChange, onSource, onTrac
                     <div className="welcome-symbol">
                       <Sparkles size={28} strokeWidth={1.8} />
                     </div>
-                    <h1>有什么可以帮你？</h1>
-                    <p>排查 IT 问题、查找操作指南，或创建服务工单。</p>
+                    <h1>{t('有什么可以帮你？', 'How can I help?')}</h1>
+                    <p>
+                      {t(
+                        '排查 IT 问题、查找操作指南，或创建服务工单。',
+                        'Troubleshoot IT issues, find a guide, or create a service ticket.',
+                      )}
+                    </p>
                   </div>
-                  <div className="suggestion-header">常见问题</div>
+                  <div className="suggestion-header">{t('常见问题', 'Suggested questions')}</div>
                   <div className="prompt-grid">
                     {examples.map((example) => (
                       <button
@@ -254,14 +282,16 @@ export default function Tasks({ user, mode, revision, onChange, onSource, onTrac
                     <article key={run.id} className="exchange">
                       <div className="user-message">
                         <span className="avatar small">
-                          {(run.user_id === user.id ? user.name : run.user_id || user.name).slice(
-                            0,
-                            1,
-                          )}
+                          {(run.user_id === user.id
+                            ? displayUserName(user)
+                            : run.user_id || displayUserName(user)
+                          ).slice(0, 1)}
                         </span>
                         <div>
                           <span className="message-author">
-                            {run.user_id === user.id ? user.name : run.user_id || user.name}
+                            {run.user_id === user.id
+                              ? displayUserName(user)
+                              : run.user_id || displayUserName(user)}
                             <time>{date(run.created_at, true)}</time>
                           </span>
                           <p>{promptOf(run)}</p>
@@ -277,19 +307,33 @@ export default function Tasks({ user, mode, revision, onChange, onSource, onTrac
                             <Badge value={run.status} />
                           </div>
                           <Diagnostics items={array(run.diagnostics)} />
+                          {locale === 'en' &&
+                            (array(run.citations).length > 0 || run.locale === 'zh-CN') && (
+                              <p className="muted small-text">
+                                Source excerpts and previously saved answers keep their original
+                                language.
+                              </p>
+                            )}
                           <Markdown
                             text={
                               run.answer ||
                               (run.status === 'awaiting_approval'
-                                ? '该操作需要授权，已创建审批请求。审批结果会记录在运行轨迹中。'
-                                : '这次运行没有返回回答，请查看检索轨迹。')
+                                ? t(
+                                    '该操作需要授权，已创建审批请求。审批结果会记录在运行轨迹中。',
+                                    'This action requires authorization. An approval request has been created; the decision will appear in the run trace.',
+                                  )
+                                : t(
+                                    '这次运行没有返回回答，请查看检索轨迹。',
+                                    'This run returned no answer. Check the retrieval trace for details.',
+                                  ))
                             }
                           />
                           {array(run.citations).length > 0 && (
                             <div className="citations">
                               <div className="citations-label">
                                 <BookOpen size={14} />
-                                参考来源 · {run.citations.length}
+                                {t('参考来源 · ', 'Sources · ')}
+                                {run.citations.length}
                               </div>
                               {array(run.citations).map((source, index) => (
                                 <SourceCard
@@ -304,7 +348,7 @@ export default function Tasks({ user, mode, revision, onChange, onSource, onTrac
                           <div className="run-actions">
                             <button onClick={() => onTrace(run)}>
                               <GitBranch size={14} />
-                              查看检索轨迹
+                              {t('查看检索轨迹', 'View retrieval trace')}
                             </button>
                             <button
                               onClick={() =>
@@ -316,7 +360,7 @@ export default function Tasks({ user, mode, revision, onChange, onSource, onTrac
                               }
                             >
                               <Ticket size={14} />
-                              转为工单
+                              {t('转为工单', 'Create ticket')}
                             </button>
                             {run.skill_id && (
                               <span>
@@ -327,9 +371,12 @@ export default function Tasks({ user, mode, revision, onChange, onSource, onTrac
                           {run.approval_id && (
                             <div className="approval-hint">
                               <ShieldCheck size={16} />
-                              此操作已生成审批请求
+                              {t(
+                                '此操作已生成审批请求',
+                                'An approval request is ready for this action',
+                              )}
                               <button onClick={() => setView('approvals')}>
-                                查看审批
+                                {t('查看审批', 'View approval')}
                                 <ChevronRight size={14} />
                               </button>
                             </div>
@@ -348,8 +395,13 @@ export default function Tasks({ user, mode, revision, onChange, onSource, onTrac
                     <i />
                   </span>
                   <div>
-                    <strong>正在查找可访问的知识</strong>
-                    <p>检索证据、检查权限并生成回答…</p>
+                    <strong>{t('正在查找可访问的知识', 'Searching accessible knowledge')}</strong>
+                    <p>
+                      {t(
+                        '检索证据、检查权限并生成回答…',
+                        'Retrieving evidence, checking access, and preparing a response…',
+                      )}
+                    </p>
                   </div>
                 </div>
               )}
@@ -363,7 +415,7 @@ export default function Tasks({ user, mode, revision, onChange, onSource, onTrac
             >
               <div className={`composer ${sending ? 'is-busy' : ''}`}>
                 <label className="sr-only" htmlFor="message">
-                  描述你的 IT 问题
+                  {t('描述你的 IT 问题', 'Describe your IT issue')}
                 </label>
                 <textarea
                   ref={input}
@@ -371,7 +423,10 @@ export default function Tasks({ user, mode, revision, onChange, onSource, onTrac
                   value={message}
                   disabled={sending}
                   onChange={(event) => setMessage(event.target.value)}
-                  placeholder="描述你遇到的问题，例如：VPN 连接失败，提示错误 809…"
+                  placeholder={t(
+                    '描述你遇到的问题，例如：VPN 连接失败，提示错误 809…',
+                    'Describe your issue, for example: VPN fails to connect with error 809…',
+                  )}
                   rows={2}
                   maxLength={8000}
                   onKeyDown={(event) => {
@@ -388,11 +443,11 @@ export default function Tasks({ user, mode, revision, onChange, onSource, onTrac
                 <div className="composer-bottom">
                   <span>
                     <BookOpen size={15} />
-                    企业知识库
+                    {t('企业知识库', 'Team knowledge')}
                   </span>
                   <button
                     className="send-button"
-                    aria-label="发送问题"
+                    aria-label={t('发送问题', 'Send question')}
                     disabled={!message.trim() || sending}
                   >
                     <ArrowUp size={21} />
@@ -401,18 +456,18 @@ export default function Tasks({ user, mode, revision, onChange, onSource, onTrac
               </div>
               <div className="composer-note">
                 <label className="mcp-select">
-                  MCP 预检
+                  {t('MCP 预检', 'MCP preflight')}
                   <select
-                    aria-label="MCP 预检"
+                    aria-label={t('MCP 预检', 'MCP preflight')}
                     value={mcpServer}
                     onChange={(e) => setMcpServer(e.target.value)}
                     disabled={sending}
                   >
-                    <option value="">不开启</option>
+                    <option value="">{t('不开启', 'Off')}</option>
                     {array(connectors.data?.items).map((item) => (
                       <option key={item.id} value={item.id} disabled={!item.enabled}>
-                        {item.name}
-                        {!item.enabled ? '（未配置）' : ''}
+                        {item.display_name || item.name}
+                        {!item.enabled ? t('（未配置）', ' (not configured)') : ''}
                       </option>
                     ))}
                   </select>
@@ -424,15 +479,26 @@ export default function Tasks({ user, mode, revision, onChange, onSource, onTrac
                       checked={cloudAllowed}
                       onChange={(event) => setCloudAllowed(event.target.checked)}
                     />
-                    允许本次问题使用云端服务，文档仍遵循出站策略
+                    {t(
+                      '允许本次问题使用云端服务，文档仍遵循出站策略',
+                      'Allow cloud services for this question; document outbound policies still apply',
+                    )}
                   </label>
                 ) : (
                   <>
                     <ShieldCheck size={12} />
-                    回答会附上可访问的知识来源。
+                    {t(
+                      '回答会附上可访问的知识来源。',
+                      'Answers include sources you are allowed to access.',
+                    )}
                   </>
                 )}
-                <span className="keyboard-hint">Enter 发送 · Shift + Enter 换行</span>
+                <span className="keyboard-hint">
+                  {t(
+                    'Enter 发送 · Shift + Enter 换行',
+                    'Enter to send · Shift + Enter for a new line',
+                  )}
+                </span>
               </div>
             </form>
           </section>
@@ -440,13 +506,13 @@ export default function Tasks({ user, mode, revision, onChange, onSource, onTrac
             <div className="rail-heading">
               <span>
                 <History size={16} />
-                最近任务
+                {t('最近任务', 'Recent tasks')}
               </span>
               <span>{histories.length}</span>
             </div>
             <ErrorBox error={runs.error} retry={runs.reload} />
             {runs.loading && !runs.data ? (
-              <Loading>正在载入记录</Loading>
+              <Loading>{t('正在载入记录', 'Loading history')}</Loading>
             ) : histories.length ? (
               <div className="history-list">
                 {histories.slice(0, 12).map((item) => (
@@ -471,8 +537,13 @@ export default function Tasks({ user, mode, revision, onChange, onSource, onTrac
             ) : (
               <div className="history-empty">
                 <Clock3 size={22} />
-                <strong>暂无历史任务</strong>
-                <p>对话会自动保存在这里，方便继续处理。</p>
+                <strong>{t('暂无历史任务', 'No recent tasks')}</strong>
+                <p>
+                  {t(
+                    '对话会自动保存在这里，方便继续处理。',
+                    'Conversations are saved here so you can continue later.',
+                  )}
+                </p>
               </div>
             )}
           </aside>
@@ -481,12 +552,17 @@ export default function Tasks({ user, mode, revision, onChange, onSource, onTrac
         <div className="subpage">
           <div className="section-intro">
             <div>
-              <h1>服务工单</h1>
-              <p>查看处理进度，记录和复用解决方案。</p>
+              <h1>{t('服务工单', 'Tickets')}</h1>
+              <p>
+                {t(
+                  '查看处理进度，记录和复用解决方案。',
+                  'Track progress, record resolutions, and reuse what works.',
+                )}
+              </p>
             </div>
             <Button onClick={() => setTicketDraft({ title: '', description: '' })}>
               <Plus size={16} />
-              创建工单
+              {t('创建工单', 'Create ticket')}
             </Button>
           </div>
           <ErrorBox error={tickets.error} retry={tickets.reload} />
@@ -508,13 +584,16 @@ export default function Tasks({ user, mode, revision, onChange, onSource, onTrac
                     <div className="record-meta">
                       <span>{ticket.id}</span>
                       <span>{date(ticket.created_at, true)}</span>
-                      <span>发起人 {ticket.owner_id}</span>
+                      <span>
+                        {t('发起人 ', 'Requester ')}
+                        {ticket.owner_id}
+                      </span>
                     </div>
                     {ticket.resolution && (
                       <div className="resolution">
                         <Check size={15} />
                         <div>
-                          <strong>解决方案</strong>
+                          <strong>{t('解决方案', 'Resolution')}</strong>
                           <p>{ticket.resolution}</p>
                         </div>
                       </div>
@@ -523,7 +602,7 @@ export default function Tasks({ user, mode, revision, onChange, onSource, onTrac
                       {ticket.run_id && (
                         <Button variant="ghost" onClick={() => void resume({ id: ticket.run_id })}>
                           <ExternalLink size={14} />
-                          关联对话
+                          {t('关联对话', 'Linked conversation')}
                         </Button>
                       )}
                       {isStaff(user) && ticket.status !== 'resolved' && (
@@ -535,7 +614,7 @@ export default function Tasks({ user, mode, revision, onChange, onSource, onTrac
                           }}
                         >
                           <Check size={14} />
-                          记录解决方案
+                          {t('记录解决方案', 'Record resolution')}
                         </Button>
                       )}
                       {isStaff(user) && ticket.status === 'resolved' && (
@@ -547,12 +626,15 @@ export default function Tasks({ user, mode, revision, onChange, onSource, onTrac
                             void action(
                               ticket.id,
                               () => post(`/tickets/${sid(ticket.id)}/knowledge`),
-                              '已创建知识候选，请在知识库检查并发布。',
+                              [
+                                '已创建知识候选，请在知识库检查并发布。',
+                                'Knowledge candidate created. Review and publish it in Knowledge.',
+                              ],
                             )
                           }
                         >
                           <ArrowDownToLine size={14} />
-                          沉淀为知识候选
+                          {t('沉淀为知识候选', 'Create knowledge candidate')}
                         </Button>
                       )}
                     </div>
@@ -561,8 +643,11 @@ export default function Tasks({ user, mode, revision, onChange, onSource, onTrac
               ))}
             </div>
           ) : (
-            <Empty title="还没有服务工单" icon={<ClipboardList size={25} />}>
-              可以从对话创建工单，也可以直接描述你遇到的问题。
+            <Empty title={t('还没有服务工单', 'No tickets yet')} icon={<ClipboardList size={25} />}>
+              {t(
+                '可以从对话创建工单，也可以直接描述你遇到的问题。',
+                'Create a ticket from a conversation, or describe a new issue.',
+              )}
             </Empty>
           )}
         </div>
@@ -570,10 +655,18 @@ export default function Tasks({ user, mode, revision, onChange, onSource, onTrac
         <div className="subpage">
           <div className="section-intro">
             <div>
-              <h1>审批请求</h1>
-              <p>核对操作内容，批准后继续执行。</p>
+              <h1>{t('审批请求', 'Approval requests')}</h1>
+              <p>
+                {t(
+                  '核对操作内容，批准后继续执行。',
+                  'Review the exact operation before approving execution.',
+                )}
+              </p>
             </div>
-            <Badge tone="warn">{pendingApprovals.length} 项待处理</Badge>
+            <Badge tone="warn">
+              {pendingApprovals.length}
+              {t(' 项待处理', ' pending')}
+            </Badge>
           </div>
           <ErrorBox error={approvals.error} retry={approvals.reload} />
           {approvals.loading && !approvals.data ? (
@@ -588,22 +681,28 @@ export default function Tasks({ user, mode, revision, onChange, onSource, onTrac
                         <ShieldCheck size={23} />
                       </span>
                       <div>
-                        <h3>{approval.tool || '工具执行请求'}</h3>
+                        <h3>{approval.tool || t('工具执行请求', 'Tool execution request')}</h3>
                         <p>
-                          发起人 {approval.requester_id} · 技能版本 {approval.skill_version || '—'}
+                          {t('发起人 ', 'Requester ')}
+                          {approval.requester_id}
+                          {t(' · 技能版本 ', ' · Skill version ')}
+                          {approval.skill_version || '—'}
                         </p>
                       </div>
                     </div>
                     <Badge value={approval.status} />
                   </div>
                   <div className="approval-parameters">
-                    <span className="field-caption">将要执行的参数</span>
+                    <span className="field-caption">
+                      {t('将要执行的参数', 'Parameters to execute')}
+                    </span>
                     <pre>{JSON.stringify(approval.parameters, null, 2)}</pre>
                   </div>
                   <div className="approval-bottom">
                     <span>
                       <Clock3 size={14} />
-                      有效期至 {date(approval.expires_at, true)}
+                      {t('有效期至 ', 'Expires ')}
+                      {date(approval.expires_at, true)}
                     </span>
                     {isStaff(user) && approval.status === 'pending' ? (
                       <div className="button-row">
@@ -618,11 +717,11 @@ export default function Tasks({ user, mode, revision, onChange, onSource, onTrac
                                 post(`/approvals/${sid(approval.id)}/decision`, {
                                   decision: 'reject',
                                 }),
-                              '已拒绝此操作。',
+                              ['已拒绝此操作。', 'Action rejected.'],
                             )
                           }
                         >
-                          拒绝
+                          {t('拒绝', 'Reject')}
                         </Button>
                         <Button
                           disabled={!!busy}
@@ -634,17 +733,20 @@ export default function Tasks({ user, mode, revision, onChange, onSource, onTrac
                                 post(`/approvals/${sid(approval.id)}/decision`, {
                                   decision: 'approve',
                                 }),
-                              '审批已通过，执行结果可在关联对话中查看。',
+                              [
+                                '审批已通过，执行结果可在关联对话中查看。',
+                                'Approved. View the execution result in the linked conversation.',
+                              ],
                             )
                           }
                         >
                           <Check size={14} />
-                          批准执行
+                          {t('批准执行', 'Approve execution')}
                         </Button>
                       </div>
                     ) : (
                       <Button variant="ghost" onClick={() => void resume({ id: approval.run_id })}>
-                        查看关联运行
+                        {t('查看关联运行', 'View linked run')}
                         <ArrowRight size={14} />
                       </Button>
                     )}
@@ -653,14 +755,23 @@ export default function Tasks({ user, mode, revision, onChange, onSource, onTrac
               ))}
             </div>
           ) : (
-            <Empty title="目前没有审批请求" icon={<ListChecks size={25} />}>
-              需要额外授权的工具操作，会在这里等待人工确认。
+            <Empty
+              title={t('目前没有审批请求', 'No approval requests')}
+              icon={<ListChecks size={25} />}
+            >
+              {t(
+                '需要额外授权的工具操作，会在这里等待人工确认。',
+                'Tool operations that need additional authorization wait here for review.',
+              )}
             </Empty>
           )}
         </div>
       )}
       {ticketDraft && (
-        <Modal title="创建服务工单" onClose={() => setTicketDraft(null)}>
+        <Modal
+          title={t('创建服务工单', 'Create service ticket')}
+          onClose={() => setTicketDraft(null)}
+        >
           <form
             onSubmit={(event) => {
               event.preventDefault();
@@ -671,23 +782,23 @@ export default function Tasks({ user, mode, revision, onChange, onSource, onTrac
                   setTicketDraft(null);
                   setView('tickets');
                 },
-                '工单已创建。',
+                ['工单已创建。', 'Ticket created.'],
               );
             }}
           >
             <label className="field">
-              工单标题
+              {t('工单标题', 'Ticket title')}
               <input
                 autoFocus
                 required
                 maxLength={160}
                 value={ticketDraft.title}
                 onChange={(event) => setTicketDraft({ ...ticketDraft, title: event.target.value })}
-                placeholder="用一句话描述遇到的问题"
+                placeholder={t('用一句话描述遇到的问题', 'Describe the issue in one sentence')}
               />
             </label>
             <label className="field">
-              问题描述
+              {t('问题描述', 'Issue description')}
               <textarea
                 required
                 rows={5}
@@ -696,22 +807,28 @@ export default function Tasks({ user, mode, revision, onChange, onSource, onTrac
                 onChange={(event) =>
                   setTicketDraft({ ...ticketDraft, description: event.target.value })
                 }
-                placeholder="补充设备、错误信息和已经尝试的操作"
+                placeholder={t(
+                  '补充设备、错误信息和已经尝试的操作',
+                  'Include your device, error message, and steps already attempted',
+                )}
               />
             </label>
             {ticketDraft.run_id && (
               <div className="form-note">
                 <GitBranch size={15} />
-                自动关联当前对话记录与检索证据
+                {t(
+                  '自动关联当前对话记录与检索证据',
+                  'The current conversation and retrieval evidence will be linked automatically',
+                )}
               </div>
             )}
             <ErrorBox error={error} />
             <div className="modal-actions">
               <Button variant="secondary" type="button" onClick={() => setTicketDraft(null)}>
-                取消
+                {t('取消', 'Cancel')}
               </Button>
               <Button loading={busy === 'ticket'} type="submit">
-                创建工单
+                {t('创建工单', 'Create ticket')}
                 <ArrowRight size={15} />
               </Button>
             </div>
@@ -720,7 +837,7 @@ export default function Tasks({ user, mode, revision, onChange, onSource, onTrac
       )}
       {resolveTicket && (
         <Modal
-          title="记录解决方案"
+          title={t('记录解决方案', 'Record resolution')}
           subtitle={resolveTicket.title}
           onClose={() => setResolveTicket(null)}
         >
@@ -733,12 +850,12 @@ export default function Tasks({ user, mode, revision, onChange, onSource, onTrac
                   await post(`/tickets/${sid(resolveTicket.id)}/resolve`, { resolution });
                   setResolveTicket(null);
                 },
-                '工单已解决，方案已保存。',
+                ['工单已解决，方案已保存。', 'Ticket resolved and resolution saved.'],
               );
             }}
           >
             <label className="field">
-              实际采取了什么操作？
+              {t('实际采取了什么操作？', 'What steps resolved the issue?')}
               <textarea
                 required
                 autoFocus
@@ -746,16 +863,19 @@ export default function Tasks({ user, mode, revision, onChange, onSource, onTrac
                 maxLength={8000}
                 value={resolution}
                 onChange={(event) => setResolution(event.target.value)}
-                placeholder="记录原因、解决步骤与验证结果，方便后续沉淀为企业知识。"
+                placeholder={t(
+                  '记录原因、解决步骤与验证结果，方便后续沉淀为企业知识。',
+                  'Record the cause, resolution steps, and verification so this can become team knowledge.',
+                )}
               />
             </label>
             <ErrorBox error={error} />
             <div className="modal-actions">
               <Button variant="secondary" type="button" onClick={() => setResolveTicket(null)}>
-                取消
+                {t('取消', 'Cancel')}
               </Button>
               <Button type="submit" loading={busy === 'resolve'} disabled={!resolution.trim()}>
-                保存并标记已解决
+                {t('保存并标记已解决', 'Save and mark resolved')}
               </Button>
             </div>
           </form>

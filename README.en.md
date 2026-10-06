@@ -1,6 +1,8 @@
 # DeskPilot
 
-[中文说明](README.md) · [Provider setup](docs/provider-setup.md) · [Evaluation](docs/evaluation.md)
+> The complete English README is now the default [project homepage](README.md), including architecture, technology tables and workflow diagrams. [简体中文](README.zh-CN.md). The app defaults to English; select 中文 explicitly to switch.
+
+[中文说明](README.zh-CN.md) · [Provider setup](docs/en/provider-setup.md) · [Evaluation](docs/en/evaluation.md)
 
 DeskPilot is a local, inspectable IT service desk agent built with FastAPI, LangGraph, SQLite, Qdrant local, and React/TypeScript. It connects evidence-based answers, tickets, durable approvals, skill versions, confirmed personal memory, reviewed shared knowledge, and usage accounting.
 
