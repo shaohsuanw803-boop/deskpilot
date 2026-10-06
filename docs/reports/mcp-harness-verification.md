@@ -25,3 +25,5 @@
 已通过已连接的 GitHub 插件发布到 [shaohsuanw803-boop/deskpilot](https://github.com/shaohsuanw803-boop/deskpilot)。源码发布提交 `fe0adc4` 的 Git tree 为 `2a8a281ec20a059c81ffeeb32994c9939564a034`，与本地已测试版本完全一致；共 143 个项目文件，媒体内容哈希也一致。浏览器已确认 README 两张 Mermaid 图正常渲染。提交历史扫描核验 164 个文本版本，无未解释命中；未上传其他独立项目、密钥或运行数据库。
 
 远程 CI 实际状态见 [GitHub Actions](https://github.com/shaohsuanw803-boop/deskpilot/actions)。本地 Git 原开发分支保留；发布分支跟踪 `origin/main`。本次使用连接器发布，命令行 Git 的写入凭据仍需用户将来自行配置，未复制或提取插件密钥。
+
+首次远程 Windows、Linux 和前端检查均通过。归档步骤提示 `.cache` 隐藏目录被默认排除，随后将上传范围明确限制为生成的 JSON / Markdown 两个报告，启用隐藏路径支持并在缺少报告时失败。CI Action 按各自官方仓库更新为 v7，checkout 禁止持久保存凭据；没有扩大工作流权限或上传整个缓存目录。

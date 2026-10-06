@@ -36,15 +36,21 @@ jobs:
       MAX_RUN_COST_CNY: '0.50'
       MAX_DAILY_COST_CNY: '10.00'
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.11'
       - run: python -m pip install -r requirements.lock.txt
       - run: python -m pip install --no-deps -e .
       - run: python scripts/evaluate.py --cloud --split "$EVALUATION_SPLIT" --output .cache/cloud-retrieval
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: cloud-retrieval
-          path: .cache/cloud-retrieval.*
+          path: |
+            .cache/cloud-retrieval.json
+            .cache/cloud-retrieval.md
+          include-hidden-files: true
+          if-no-files-found: error
