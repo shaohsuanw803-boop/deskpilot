@@ -21,7 +21,7 @@ def main():
         log_config['loggers']['deskpilot.http'] = {
             'handlers': ['default'], 'level': 'INFO', 'propagate': False}
         uvicorn.run('deskpilot.api:app', host='127.0.0.1', port=args.port, workers=1,
-                    log_config=log_config)
+                    log_config=log_config, access_log=False)
         return
     from .api import seed_knowledge
     from .knowledge import KnowledgeService

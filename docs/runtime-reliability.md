@@ -16,7 +16,7 @@ DeskPilot applies request controls before parsing, records task submissions dura
 
 The ASGI boundary checks `Content-Length` for early rejection and counts the actual received bytes. A complete bounded body is required before JSON or multipart parsing. Missing or understated length headers do not bypass the limit. Oversized bodies return `413`; incomplete uploads that exceed the deadline return `408`. Completion, disconnect, cancellation, and exceptions release the admission slot. Health and other GET requests do not consume mutation slots.
 
-The CLI configures the `deskpilot.http` logger. Its completion event contains only the generated request ID, HTTP method, resolved route template, status, and elapsed time. It excludes raw paths, query strings, headers, and request bodies. Accepted task submissions also record the request ID in the task's audit trail.
+The CLI configures the `deskpilot.http` logger and disables the default Uvicorn access log, which otherwise includes raw URLs. Its completion event contains only the generated request ID, HTTP method, resolved route template, status, and elapsed time. It excludes raw paths, query strings, headers, and request bodies. Accepted task submissions also record the request ID in the task's audit trail.
 
 [Boundary implementation](../backend/deskpilot/http_boundary.py) · [Framing and overload tests](../tests/test_http_boundary.py)
 
@@ -57,7 +57,7 @@ Admission is per process, not a distributed queue or per-user rate limiter. Bodi
 
 同一进程最多接纳四个 API 写请求，读取请求体前即占用配额；满载返回 `503` 和 `Retry-After: 1`。完成、断连、取消和异常均释放配额，健康检查等 GET 请求不占写配额。
 
-服务端生成请求 ID，写入响应头；任务提交审计使用同一 ID。结构化 HTTP 日志只记录请求 ID、方法、路由模板、状态与耗时，不记录原始路径、查询参数、请求头和正文。
+服务端生成请求 ID，写入响应头；任务提交审计使用同一 ID。CLI 关闭默认 Uvicorn 访问日志，避免同时输出原始 URL；结构化 HTTP 日志只记录请求 ID、方法、路由模板、状态与耗时，不记录原始路径、查询参数、请求头和正文。
 
 ### 提交幂等与恢复
 

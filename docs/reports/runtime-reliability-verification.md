@@ -6,7 +6,7 @@ Date: **2026-10-06**. Environment: Windows, Python 3.11, local demo data. No pai
 
 | Check | Result |
 |---|---|
-| Full backend suite: `python -m pytest -q` | **195 passed in 67.01s** |
+| Full backend suite: `python -m pytest -q` | **195 passed in 68.94s** |
 | `python -m ruff check backend tests scripts` | Passed |
 | `npm run test:i18n` | **9 passed**, including three pending-submission retry cases |
 | `npm run build` | TypeScript and Vite production build passed |
@@ -17,6 +17,8 @@ Date: **2026-10-06**. Environment: Windows, Python 3.11, local demo data. No pai
 ## Browser smoke check
 
 The production frontend served by FastAPI was tested in the in-app browser with a fresh local demo store. The default English workspace submitted `Windows 11 Starbridge VPN 5.2 error 809 connection timeout`, displayed a local-excerpt response with five citations and one recent task, and opened the troubleshooting source with its version, section and access-verified state. This was one happy-path smoke check; transport-loss and overload behavior are covered by the automated tests below.
+
+A separate live CLI probe started an ephemeral demo server and sent a health request containing a synthetic query marker. The response carried `X-Request-ID`; the completion log contained the route template and correlation ID, and the query marker was absent after disabling default Uvicorn access logging. The probe first reproduced the raw-URL leak before the change.
 
 ## Behavior covered
 

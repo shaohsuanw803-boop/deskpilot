@@ -19,7 +19,7 @@
 - [x] 2026-09-30 后端回归：81 passed in 50.71s；Ruff、前端生产构建和 Prettier 检查通过。uv 锁文件离线一致性检查已于 2026-09-29 通过。
 - [x] 2026-10-06 MCP 增强后回归：96 passed in 58.30s；Ruff、依赖锁一致性、TypeScript、Vite、Prettier 通过。见 [MCP 验证记录](reports/mcp-harness-verification.md)。
 - [x] 2026-10-06 双语版本回归：104 passed in 68.73s；6 项前端语言测试、Ruff、TypeScript、Vite、Prettier 通过。见 [双语验证记录](reports/bilingual-verification.md)。
-- [x] 2026-10-06 可靠性更新：**195 passed in 67.01s**；9 项前端测试、Ruff、TypeScript、Vite、Prettier 通过。新增任务提交幂等、解析前请求限量、完整请求体截止时间、写请求接纳上限、请求关联和有限预算校验。见[运行可靠性验证](reports/runtime-reliability-verification.md)。
+- [x] 2026-10-06 可靠性更新：**195 passed in 68.94s**；9 项前端测试、Ruff、TypeScript、Vite、Prettier 通过。新增任务提交幂等、解析前请求限量、完整请求体截止时间、写请求接纳上限、请求关联和有限预算校验。见[运行可靠性验证](reports/runtime-reliability-verification.md)。
 - [x] 蓝白界面浏览器检查和 JPG 截图已保存，另保留首版旧配色录屏；390px 移动布局已验证，手机菜单交互待真机复核，具体日期与覆盖范围见[浏览器验收记录](browser-verification.md)。
 
 真实 Qwen 付费调用、dense/hybrid/rerank 云端质量和实际云费用**未测**；需配置自己的 API 凭据后显式运行，不能用模拟 HTTP 测试或 BM25 报告代替。远程 MCP 协议适配器经过 HTTP 夹具测试，真实企业服务仍待联调。生产 SSO、真实权限写入、防篡改审计和企业合规认证**未实现**。
