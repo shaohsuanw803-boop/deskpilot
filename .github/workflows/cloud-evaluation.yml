@@ -1,0 +1,50 @@
+name: Manual cloud retrieval evaluation
+on:
+  workflow_dispatch:
+    inputs:
+      split:
+        description: Dataset split (paid API calls)
+        type: choice
+        options: [dev, test]
+        default: dev
+permissions:
+  contents: read
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: cloud-evaluation
+    env:
+      APP_MODE: cloud
+      EVALUATION_SPLIT: ${{ inputs.split }}
+      PYTHONUTF8: '1'
+      LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
+      LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+      LLM_MODEL: ${{ vars.LLM_MODEL }}
+      EMBEDDING_BASE_URL: ${{ secrets.EMBEDDING_BASE_URL }}
+      EMBEDDING_API_KEY: ${{ secrets.EMBEDDING_API_KEY }}
+      EMBEDDING_MODEL: text-embedding-v4
+      EMBEDDING_DIMENSIONS: '1024'
+      RERANK_ENDPOINT: ${{ secrets.RERANK_ENDPOINT }}
+      RERANK_API_KEY: ${{ secrets.RERANK_API_KEY }}
+      RERANK_MODEL: qwen3-rerank
+      LLM_INPUT_CNY_PER_MILLION: ${{ vars.LLM_INPUT_CNY_PER_MILLION }}
+      LLM_OUTPUT_CNY_PER_MILLION: ${{ vars.LLM_OUTPUT_CNY_PER_MILLION }}
+      EMBEDDING_CNY_PER_MILLION: ${{ vars.EMBEDDING_CNY_PER_MILLION }}
+      RERANK_CNY_PER_MILLION: ${{ vars.RERANK_CNY_PER_MILLION }}
+      PRICE_AS_OF: ${{ vars.PRICE_AS_OF }}
+      MAX_RUN_COST_CNY: '0.50'
+      MAX_DAILY_COST_CNY: '10.00'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -r requirements.lock.txt
+      - run: python -m pip install --no-deps -e .
+      - run: python scripts/evaluate.py --cloud --split "$EVALUATION_SPLIT" --output .cache/cloud-retrieval
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cloud-retrieval
+          path: .cache/cloud-retrieval.*

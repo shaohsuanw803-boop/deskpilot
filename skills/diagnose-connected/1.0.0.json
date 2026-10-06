@@ -1,0 +1,14 @@
+{
+  "id": "diagnose-connected",
+  "name": "连接器辅助诊断",
+  "description": "显式执行 MCP 服务与本人设备预检，再检索正式知识；外部结果仅本地展示。",
+  "version": "1.0.0",
+  "owner": "repository-maintainer",
+  "allowed_tools": ["mcp.service_status", "mcp.asset_lookup", "knowledge.search", "ticket.create"],
+  "timeout_seconds": 90,
+  "input_schema": {"message": "string", "mcp_server": "reviewed connector id"},
+  "output_schema": {"answer": "string", "citations": "array", "diagnostics": "array"},
+  "instructions": "只依据当前授权知识回答。MCP 观测与知识引用分开展示，观测不是正式知识，不得放入云端上下文。",
+  "regression_cases": ["mcp-self-scope", "mcp-contract-drift", "mcp-fail-closed", "mcp-local-only"],
+  "changelog": "加入经过审核的只读 MCP 预检与 harness"
+}

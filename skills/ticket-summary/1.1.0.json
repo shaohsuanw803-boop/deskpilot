@@ -1,0 +1,25 @@
+{
+  "id": "ticket-summary",
+  "name": "工单知识沉淀",
+  "description": "将已解决工单整理为待审核知识候选。",
+  "version": "1.1.0",
+  "owner": "repository-maintainer",
+  "allowed_tools": [
+    "ticket.summarize"
+  ],
+  "timeout_seconds": 60,
+  "input_schema": {
+    "message": "string"
+  },
+  "output_schema": {
+    "answer": "string",
+    "citations": "array"
+  },
+  "instructions": "仅总结已解决工单，保留来源。生成的是候选知识，管理员审核前不参加共享检索。",
+  "regression_cases": [
+    "unknown-tool-denied",
+    "employee-grant-denied",
+    "source-required"
+  ],
+  "changelog": "强调证据边界和人工接管；须先评测后激活"
+}

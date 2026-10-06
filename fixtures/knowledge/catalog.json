@@ -1,0 +1,566 @@
+[
+  {
+    "id": "vpn-809-win11",
+    "file": "vpn-809-win11.md",
+    "title": "Windows 11 星桥 VPN 错误 809：连接超时",
+    "product": "星桥VPN",
+    "product_version": "Windows 11 / 5.2",
+    "owner": "示例 IT 服务台",
+    "roles": [
+      "employee",
+      "it",
+      "admin"
+    ],
+    "cloud_allowed": true
+  },
+  {
+    "id": "vpn-691-win11",
+    "file": "vpn-691-win11.md",
+    "title": "Windows 11 星桥 VPN 错误 691：身份验证失败",
+    "product": "星桥VPN",
+    "product_version": "Windows 11 / 5.2",
+    "owner": "示例 IT 服务台",
+    "roles": [
+      "employee",
+      "it",
+      "admin"
+    ],
+    "cloud_allowed": true
+  },
+  {
+    "id": "vpn-868-win11",
+    "file": "vpn-868-win11.md",
+    "title": "Windows 11 星桥 VPN 错误 868：服务器名称无法解析",
+    "product": "星桥VPN",
+    "product_version": "Windows 11 / 5.2",
+    "owner": "示例 IT 服务台",
+    "roles": [
+      "employee",
+      "it",
+      "admin"
+    ],
+    "cloud_allowed": true
+  },
+  {
+    "id": "vpn-macos-permission",
+    "file": "vpn-macos-permission.md",
+    "title": "macOS 14 星桥 VPN：允许网络扩展",
+    "product": "星桥VPN",
+    "product_version": "macOS 14 / 5.2",
+    "owner": "示例 IT 服务台",
+    "roles": [
+      "employee",
+      "it",
+      "admin"
+    ],
+    "cloud_allowed": true
+  },
+  {
+    "id": "vpn-macos-profile",
+    "file": "vpn-macos-profile.md",
+    "title": "macOS 13 星桥 VPN：旧配置迁移",
+    "product": "星桥VPN",
+    "product_version": "macOS 13 / 4.9",
+    "owner": "示例 IT 服务台",
+    "roles": [
+      "employee",
+      "it",
+      "admin"
+    ],
+    "cloud_allowed": true
+  },
+  {
+    "id": "vpn-mfa-clock",
+    "file": "vpn-mfa-clock.md",
+    "title": "VPN 动态验证码持续失效：时间同步检查",
+    "product": "星桥VPN",
+    "product_version": "5.2",
+    "owner": "示例 IT 服务台",
+    "roles": [
+      "employee",
+      "it",
+      "admin"
+    ],
+    "cloud_allowed": true
+  },
+  {
+    "id": "wifi-win11",
+    "file": "wifi-win11.md",
+    "title": "Windows 11 办公 Wi-Fi 连接但无法上网",
+    "product": "办公网络",
+    "product_version": "Windows 11",
+    "owner": "示例 IT 服务台",
+    "roles": [
+      "employee",
+      "it",
+      "admin"
+    ],
+    "cloud_allowed": true
+  },
+  {
+    "id": "dns-office",
+    "file": "dns-office.md",
+    "title": "办公网络 DNS 异常：有连接但域名打不开",
+    "product": "办公网络",
+    "product_version": "通用",
+    "owner": "示例 IT 服务台",
+    "roles": [
+      "employee",
+      "it",
+      "admin"
+    ],
+    "cloud_allowed": true
+  },
+  {
+    "id": "proxy-browser",
+    "file": "proxy-browser.md",
+    "title": "浏览器反复出现代理认证：检查代理配置",
+    "product": "浏览器",
+    "product_version": "受管 Chromium",
+    "owner": "示例 IT 服务台",
+    "roles": [
+      "employee",
+      "it",
+      "admin"
+    ],
+    "cloud_allowed": true
+  },
+  {
+    "id": "account-unlock",
+    "file": "account-unlock.md",
+    "title": "企业账号被锁定：服务台解锁流程",
+    "product": "账号",
+    "product_version": "通用",
+    "owner": "示例 IT 服务台",
+    "roles": [
+      "employee",
+      "it",
+      "admin"
+    ],
+    "cloud_allowed": true
+  },
+  {
+    "id": "password-expired",
+    "file": "password-expired.md",
+    "title": "密码到期后如何更新保存凭据",
+    "product": "账号",
+    "product_version": "通用",
+    "owner": "示例 IT 服务台",
+    "roles": [
+      "employee",
+      "it",
+      "admin"
+    ],
+    "cloud_allowed": true
+  },
+  {
+    "id": "mfa-new-phone",
+    "file": "mfa-new-phone.md",
+    "title": "更换手机后的 MFA 迁移申请",
+    "product": "账号",
+    "product_version": "通用",
+    "owner": "示例 IT 服务台",
+    "roles": [
+      "employee",
+      "it",
+      "admin"
+    ],
+    "cloud_allowed": true
+  },
+  {
+    "id": "shared-folder",
+    "file": "shared-folder.md",
+    "title": "共享文件夹无权限：申请而非借用账号",
+    "product": "文件服务",
+    "product_version": "Windows 11",
+    "owner": "示例 IT 服务台",
+    "roles": [
+      "employee",
+      "it",
+      "admin"
+    ],
+    "cloud_allowed": true
+  },
+  {
+    "id": "local-admin",
+    "file": "local-admin.md",
+    "title": "安装程序要求管理员权限：临时提权申请",
+    "product": "权限管理",
+    "product_version": "Windows 11",
+    "owner": "示例 IT 服务台",
+    "roles": [
+      "employee",
+      "it",
+      "admin"
+    ],
+    "cloud_allowed": true
+  },
+  {
+    "id": "office-activation",
+    "file": "office-activation.md",
+    "title": "Microsoft 365 提示未授权产品",
+    "product": "Microsoft 365",
+    "product_version": "Windows 11",
+    "owner": "示例 IT 服务台",
+    "roles": [
+      "employee",
+      "it",
+      "admin"
+    ],
+    "cloud_allowed": true
+  },
+  {
+    "id": "outlook-offline",
+    "file": "outlook-offline.md",
+    "title": "Outlook 桌面版一直显示脱机工作",
+    "product": "Outlook",
+    "product_version": "经典版 Windows",
+    "owner": "示例 IT 服务台",
+    "roles": [
+      "employee",
+      "it",
+      "admin"
+    ],
+    "cloud_allowed": true
+  },
+  {
+    "id": "outlook-search",
+    "file": "outlook-search.md",
+    "title": "新版 Outlook 搜索不到旧邮件",
+    "product": "Outlook",
+    "product_version": "新版 Windows",
+    "owner": "示例 IT 服务台",
+    "roles": [
+      "employee",
+      "it",
+      "admin"
+    ],
+    "cloud_allowed": true
+  },
+  {
+    "id": "teams-mic-win",
+    "file": "teams-mic-win.md",
+    "title": "Windows 11 会议软件麦克风无声",
+    "product": "星会会议",
+    "product_version": "Windows 11 / 3.4",
+    "owner": "示例 IT 服务台",
+    "roles": [
+      "employee",
+      "it",
+      "admin"
+    ],
+    "cloud_allowed": true
+  },
+  {
+    "id": "teams-mic-mac",
+    "file": "teams-mic-mac.md",
+    "title": "macOS 14 会议软件无法使用麦克风",
+    "product": "星会会议",
+    "product_version": "macOS 14 / 3.4",
+    "owner": "示例 IT 服务台",
+    "roles": [
+      "employee",
+      "it",
+      "admin"
+    ],
+    "cloud_allowed": true
+  },
+  {
+    "id": "excel-protected",
+    "file": "excel-protected.md",
+    "title": "Excel 受保护视图：如何确认文档来源",
+    "product": "Excel",
+    "product_version": "Microsoft 365",
+    "owner": "示例 IT 服务台",
+    "roles": [
+      "employee",
+      "it",
+      "admin"
+    ],
+    "cloud_allowed": true
+  },
+  {
+    "id": "printer-win11",
+    "file": "printer-win11.md",
+    "title": "Windows 11 添加五楼北区打印机",
+    "product": "打印服务",
+    "product_version": "Windows 11",
+    "owner": "示例 IT 服务台",
+    "roles": [
+      "employee",
+      "it",
+      "admin"
+    ],
+    "cloud_allowed": true
+  },
+  {
+    "id": "printer-macos",
+    "file": "printer-macos.md",
+    "title": "macOS 14 添加五楼北区打印机",
+    "product": "打印服务",
+    "product_version": "macOS 14",
+    "owner": "示例 IT 服务台",
+    "roles": [
+      "employee",
+      "it",
+      "admin"
+    ],
+    "cloud_allowed": true
+  },
+  {
+    "id": "printer-queue",
+    "file": "printer-queue.md",
+    "title": "打印任务卡住：只取消自己的作业",
+    "product": "打印服务",
+    "product_version": "Windows 11",
+    "owner": "示例 IT 服务台",
+    "roles": [
+      "employee",
+      "it",
+      "admin"
+    ],
+    "cloud_allowed": true
+  },
+  {
+    "id": "printer-release",
+    "file": "printer-release.md",
+    "title": "安全打印到设备后找不到待释放任务",
+    "product": "打印服务",
+    "product_version": "安全打印 2.1",
+    "owner": "示例 IT 服务台",
+    "roles": [
+      "employee",
+      "it",
+      "admin"
+    ],
+    "cloud_allowed": true
+  },
+  {
+    "id": "software-install",
+    "file": "software-install.md",
+    "title": "软件中心安装失败：下载与签名检查",
+    "product": "软件中心",
+    "product_version": "Windows 11 / 2.8",
+    "owner": "示例 IT 服务台",
+    "roles": [
+      "employee",
+      "it",
+      "admin"
+    ],
+    "cloud_allowed": true
+  },
+  {
+    "id": "software-license",
+    "file": "software-license.md",
+    "title": "专业软件许可证不足：申请席位",
+    "product": "软件中心",
+    "product_version": "通用",
+    "owner": "示例 IT 服务台",
+    "roles": [
+      "employee",
+      "it",
+      "admin"
+    ],
+    "cloud_allowed": true
+  },
+  {
+    "id": "update-restart",
+    "file": "update-restart.md",
+    "title": "Windows 更新后需要重启：保存与安排",
+    "product": "终端管理",
+    "product_version": "Windows 11",
+    "owner": "示例 IT 服务台",
+    "roles": [
+      "employee",
+      "it",
+      "admin"
+    ],
+    "cloud_allowed": true
+  },
+  {
+    "id": "disk-cleanup",
+    "file": "disk-cleanup.md",
+    "title": "系统盘空间不足：安全清理个人临时文件",
+    "product": "终端管理",
+    "product_version": "Windows 11",
+    "owner": "示例 IT 服务台",
+    "roles": [
+      "employee",
+      "it",
+      "admin"
+    ],
+    "cloud_allowed": true
+  },
+  {
+    "id": "bitlocker-recovery",
+    "file": "bitlocker-recovery.md",
+    "title": "Windows 启动要求恢复密钥：联系 IT",
+    "product": "终端管理",
+    "product_version": "Windows 11",
+    "owner": "示例 IT 服务台",
+    "roles": [
+      "employee",
+      "it",
+      "admin"
+    ],
+    "cloud_allowed": true
+  },
+  {
+    "id": "macos-storage",
+    "file": "macos-storage.md",
+    "title": "macOS 存储不足：查看分类并申请归档",
+    "product": "终端管理",
+    "product_version": "macOS 14",
+    "owner": "示例 IT 服务台",
+    "roles": [
+      "employee",
+      "it",
+      "admin"
+    ],
+    "cloud_allowed": true
+  },
+  {
+    "id": "onedrive-sync",
+    "file": "onedrive-sync.md",
+    "title": "企业云盘同步暂停：先确认账号和冲突",
+    "product": "企业云盘",
+    "product_version": "桌面版 7.1",
+    "owner": "示例 IT 服务台",
+    "roles": [
+      "employee",
+      "it",
+      "admin"
+    ],
+    "cloud_allowed": true
+  },
+  {
+    "id": "attachment-blocked",
+    "file": "attachment-blocked.md",
+    "title": "企业邮件附件被拦截：安全传递流程",
+    "product": "邮件安全",
+    "product_version": "通用",
+    "owner": "示例 IT 服务台",
+    "roles": [
+      "employee",
+      "it",
+      "admin"
+    ],
+    "cloud_allowed": true
+  },
+  {
+    "id": "phishing-report",
+    "file": "phishing-report.md",
+    "title": "收到可疑登录邮件：报告而非点击",
+    "product": "邮件安全",
+    "product_version": "通用",
+    "owner": "示例 IT 服务台",
+    "roles": [
+      "employee",
+      "it",
+      "admin"
+    ],
+    "cloud_allowed": true
+  },
+  {
+    "id": "remote-assist",
+    "file": "remote-assist.md",
+    "title": "远程协助：先核对工单与会话授权",
+    "product": "服务台",
+    "product_version": "通用",
+    "owner": "示例 IT 服务台",
+    "roles": [
+      "employee",
+      "it",
+      "admin"
+    ],
+    "cloud_allowed": true
+  },
+  {
+    "id": "asset-return",
+    "file": "asset-return.md",
+    "title": "离职设备归还：交接与保留业务资料",
+    "product": "资产管理",
+    "product_version": "通用",
+    "owner": "示例 IT 服务台",
+    "roles": [
+      "employee",
+      "it",
+      "admin"
+    ],
+    "cloud_allowed": true
+  },
+  {
+    "id": "finance-share",
+    "file": "finance-share.md",
+    "title": "财务季度归档区访问审批",
+    "product": "财务归档",
+    "product_version": "2026Q3",
+    "owner": "示例 IT 服务台",
+    "roles": [
+      "employee",
+      "it",
+      "admin"
+    ],
+    "cloud_allowed": false,
+    "allowed_users": [
+      "bob",
+      "chen",
+      "admin"
+    ]
+  },
+  {
+    "id": "it-vpn-gateway",
+    "file": "it-vpn-gateway.md",
+    "title": "IT 专用：VPN 网关事件交接手册",
+    "product": "星桥VPN",
+    "product_version": "运维 5.2",
+    "owner": "示例 IT 服务台",
+    "roles": [
+      "it",
+      "admin"
+    ],
+    "cloud_allowed": false
+  },
+  {
+    "id": "injection-sample",
+    "file": "injection-sample.md",
+    "title": "安全演练：工单附件中的指令注入",
+    "product": "安全演练",
+    "product_version": "1.0",
+    "owner": "示例 IT 服务台",
+    "roles": [
+      "employee",
+      "it",
+      "admin"
+    ],
+    "cloud_allowed": true
+  },
+  {
+    "id": "support-escalation",
+    "file": "support-escalation.md",
+    "title": "服务台没有匹配答案时如何升级工单",
+    "product": "服务台",
+    "product_version": "通用",
+    "owner": "示例 IT 服务台",
+    "roles": [
+      "employee",
+      "it",
+      "admin"
+    ],
+    "cloud_allowed": true
+  },
+  {
+    "id": "office-mac-activation",
+    "file": "office-mac-activation.md",
+    "title": "macOS 14 Microsoft 365 许可登录",
+    "product": "Microsoft 365",
+    "product_version": "macOS 14",
+    "owner": "示例 IT 服务台",
+    "roles": [
+      "employee",
+      "it",
+      "admin"
+    ],
+    "cloud_allowed": true
+  }
+]

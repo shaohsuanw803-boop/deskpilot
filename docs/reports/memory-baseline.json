@@ -1,0 +1,182 @@
+{
+  "generated_at": "2026-09-29T10:00:36.405583+00:00",
+  "scope": "offline deterministic context assembly; synthetic fixed replies; not cloud quality",
+  "cases": 20,
+  "rounds_per_case": 11,
+  "service_restarts": 20,
+  "full_history_input_tokens_estimated": 840600,
+  "layered_input_tokens_estimated": 537880,
+  "input_token_reduction_estimated": 0.36012372115155844,
+  "exact_fact_retention": 1.0,
+  "restart_continuity": 1.0,
+  "cloud_calls": 0,
+  "real_cloud_cost_cny": null,
+  "real_task_success_rate": null,
+  "limitations": [
+    "字符启发式估算，非供应商 tokenizer",
+    "固定长回复会影响节省比例",
+    "未执行模型，不能证明语义事实保留、真实任务完成率或真实费用节省"
+  ],
+  "results": [
+    {
+      "case": 1,
+      "full_history_input_tokens_estimated": 42030,
+      "layered_input_tokens_estimated": 26894,
+      "retained_initial_issue": true,
+      "retained_reported_progress": true,
+      "resumed_after_restart": true
+    },
+    {
+      "case": 2,
+      "full_history_input_tokens_estimated": 42030,
+      "layered_input_tokens_estimated": 26894,
+      "retained_initial_issue": true,
+      "retained_reported_progress": true,
+      "resumed_after_restart": true
+    },
+    {
+      "case": 3,
+      "full_history_input_tokens_estimated": 42030,
+      "layered_input_tokens_estimated": 26894,
+      "retained_initial_issue": true,
+      "retained_reported_progress": true,
+      "resumed_after_restart": true
+    },
+    {
+      "case": 4,
+      "full_history_input_tokens_estimated": 42030,
+      "layered_input_tokens_estimated": 26894,
+      "retained_initial_issue": true,
+      "retained_reported_progress": true,
+      "resumed_after_restart": true
+    },
+    {
+      "case": 5,
+      "full_history_input_tokens_estimated": 42030,
+      "layered_input_tokens_estimated": 26894,
+      "retained_initial_issue": true,
+      "retained_reported_progress": true,
+      "resumed_after_restart": true
+    },
+    {
+      "case": 6,
+      "full_history_input_tokens_estimated": 42030,
+      "layered_input_tokens_estimated": 26894,
+      "retained_initial_issue": true,
+      "retained_reported_progress": true,
+      "resumed_after_restart": true
+    },
+    {
+      "case": 7,
+      "full_history_input_tokens_estimated": 42030,
+      "layered_input_tokens_estimated": 26894,
+      "retained_initial_issue": true,
+      "retained_reported_progress": true,
+      "resumed_after_restart": true
+    },
+    {
+      "case": 8,
+      "full_history_input_tokens_estimated": 42030,
+      "layered_input_tokens_estimated": 26894,
+      "retained_initial_issue": true,
+      "retained_reported_progress": true,
+      "resumed_after_restart": true
+    },
+    {
+      "case": 9,
+      "full_history_input_tokens_estimated": 42030,
+      "layered_input_tokens_estimated": 26894,
+      "retained_initial_issue": true,
+      "retained_reported_progress": true,
+      "resumed_after_restart": true
+    },
+    {
+      "case": 10,
+      "full_history_input_tokens_estimated": 42030,
+      "layered_input_tokens_estimated": 26894,
+      "retained_initial_issue": true,
+      "retained_reported_progress": true,
+      "resumed_after_restart": true
+    },
+    {
+      "case": 11,
+      "full_history_input_tokens_estimated": 42030,
+      "layered_input_tokens_estimated": 26894,
+      "retained_initial_issue": true,
+      "retained_reported_progress": true,
+      "resumed_after_restart": true
+    },
+    {
+      "case": 12,
+      "full_history_input_tokens_estimated": 42030,
+      "layered_input_tokens_estimated": 26894,
+      "retained_initial_issue": true,
+      "retained_reported_progress": true,
+      "resumed_after_restart": true
+    },
+    {
+      "case": 13,
+      "full_history_input_tokens_estimated": 42030,
+      "layered_input_tokens_estimated": 26894,
+      "retained_initial_issue": true,
+      "retained_reported_progress": true,
+      "resumed_after_restart": true
+    },
+    {
+      "case": 14,
+      "full_history_input_tokens_estimated": 42030,
+      "layered_input_tokens_estimated": 26894,
+      "retained_initial_issue": true,
+      "retained_reported_progress": true,
+      "resumed_after_restart": true
+    },
+    {
+      "case": 15,
+      "full_history_input_tokens_estimated": 42030,
+      "layered_input_tokens_estimated": 26894,
+      "retained_initial_issue": true,
+      "retained_reported_progress": true,
+      "resumed_after_restart": true
+    },
+    {
+      "case": 16,
+      "full_history_input_tokens_estimated": 42030,
+      "layered_input_tokens_estimated": 26894,
+      "retained_initial_issue": true,
+      "retained_reported_progress": true,
+      "resumed_after_restart": true
+    },
+    {
+      "case": 17,
+      "full_history_input_tokens_estimated": 42030,
+      "layered_input_tokens_estimated": 26894,
+      "retained_initial_issue": true,
+      "retained_reported_progress": true,
+      "resumed_after_restart": true
+    },
+    {
+      "case": 18,
+      "full_history_input_tokens_estimated": 42030,
+      "layered_input_tokens_estimated": 26894,
+      "retained_initial_issue": true,
+      "retained_reported_progress": true,
+      "resumed_after_restart": true
+    },
+    {
+      "case": 19,
+      "full_history_input_tokens_estimated": 42030,
+      "layered_input_tokens_estimated": 26894,
+      "retained_initial_issue": true,
+      "retained_reported_progress": true,
+      "resumed_after_restart": true
+    },
+    {
+      "case": 20,
+      "full_history_input_tokens_estimated": 42030,
+      "layered_input_tokens_estimated": 26894,
+      "retained_initial_issue": true,
+      "retained_reported_progress": true,
+      "resumed_after_restart": true
+    }
+  ]
+}

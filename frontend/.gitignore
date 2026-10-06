@@ -1,0 +1,5 @@
+# Frontend build artifacts
+node_modules/
+dist/
+.npm-cache/
+*.tsbuildinfo

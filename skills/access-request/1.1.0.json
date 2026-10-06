@@ -1,0 +1,26 @@
+{
+  "id": "access-request",
+  "name": "软件权限申请",
+  "description": "把软件申请准备成可审查的操作，审批后模拟执行。",
+  "version": "1.1.0",
+  "owner": "repository-maintainer",
+  "allowed_tools": [
+    "access.request",
+    "access.grant"
+  ],
+  "timeout_seconds": 60,
+  "input_schema": {
+    "message": "string"
+  },
+  "output_schema": {
+    "answer": "string",
+    "citations": "array"
+  },
+  "instructions": "先展示申请人、软件、标准权限和申请理由。必须经 IT 审批，不得自行增加权限。",
+  "regression_cases": [
+    "unknown-tool-denied",
+    "employee-grant-denied",
+    "source-required"
+  ],
+  "changelog": "强调证据边界和人工接管；须先评测后激活"
+}
