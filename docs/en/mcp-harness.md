@@ -26,27 +26,15 @@ The local server starts a fixed Python module without an arbitrary command-argum
 
 There are no arbitrary file-reading, shell, database-write, email, sampling, or interactive-authorization callback capabilities. MCP results are external data: validate size and structure, redact them, and keep them local. They do not become RAG evidence, historical assistant answers, or Qwen messages. The interface renders plain text rather than executing instructions or HTML from results.
 
-## Connect a real remote service
+## Remote connector
 
-Configure the local `.env`. Never put credentials in a README, frontend `VITE_*` variables, URL parameters, or tickets.
+The remote connector supports **Streamable HTTP**, uses the two tool contracts above, and authenticates with a backend Bearer credential. The `MCP_*` fields in [`.env.example`](../../.env.example) define configuration and defaults. Once enabled, it is available as the enterprise IT connector in the workspace.
 
-```dotenv
-MCP_REMOTE_ENABLED=true
-MCP_REMOTE_URL=https://your-reviewed-host/mcp
-MCP_REMOTE_ALLOWED_HOST=your-reviewed-host
-MCP_REMOTE_TOKEN=
-MCP_TIMEOUT_SECONDS=15
-MCP_MAX_RESULT_BYTES=16384
-MCP_DAILY_CALL_LIMIT=200
-MCP_FAILURE_THRESHOLD=3
-MCP_COOLDOWN_SECONDS=60
-```
-
-Use a dedicated credential with minimal read-only permissions for `MCP_REMOTE_TOKEN`; do not reuse a Qwen key. Restart and explicitly query the enterprise IT connector. `APP_MODE=demo` disables Qwen requests, while remote MCP has its own enable switch: these authorizations are independent. Selecting a remote connector sends the service enum or current user ID to that service, not the complete question, knowledge chunks, or chat history.
+`APP_MODE=demo` controls Qwen requests; `MCP_REMOTE_ENABLED` independently controls remote MCP. Business-call arguments contain only the service enum or current user ID, excluding the complete question, knowledge chunks, and chat history.
 
 The adapter supports Streamable HTTP over HTTPS on port 443 with a fixed allowlisted host. It rejects URL user information, query parameters, redirects, and non-public DNS results. It rechecks the address and run state before each HTTP request and disables inherited environment proxies. One overall timeout covers SDK initialization, tool discovery, and execution. HTTP failures do not persist raw exceptions or authentication headers. Filters on MCP SDK transport/session loggers omit raw payloads and exception bodies. The application does not automatically resend `tools/call`; SDK event-stream reconnection is not a business-operation retry.
 
-This release uses a maintainer-configured Bearer credential. It does not implement OAuth login or refresh, user-token passthrough, or a multi-tenant enterprise directory mapping. The remote service must enforce its own credential and user-data scope. Demo IDs such as `alice` are not production enterprise identities. A private-network MCP service requires a deliberately designed egress gateway; do not simply disable SSRF checks.
+This release does not implement OAuth login or refresh, user-token passthrough, or a multi-tenant enterprise directory mapping. The remote service enforces its own credential and user-data scope. Demo IDs such as `alice` do not correspond to production enterprise identities. The default network policy excludes private-network MCP services; those deployments require an additional egress-gateway design.
 
 ## Harness responsibilities
 
@@ -83,8 +71,8 @@ Restarting the application does not replay standalone MCP queries. An unfinished
 .venv\Scripts\python.exe scripts/check_secrets.py --history
 ```
 
-`check_secrets.py` reads the Git index or committed history and reports filenames and line numbers, never matched secret values. Verified historical synthetic-key fixtures have exact-path and SHA-256 exceptions; the entire test directory is not exempt. This heuristic check does not replace comprehensive secret scanning. If a key was committed, revoke or rotate it at the provider first, then clean history and copies even if the latest file no longer contains it.
+`check_secrets.py` reads the Git index or committed history and reports filenames and line numbers, never matched secret values. Verified historical synthetic-key fixtures have exact-path and SHA-256 exceptions; the entire test directory is not exempt. This heuristic check does not replace comprehensive secret scanning.
 
-When changing remote tools: disable the connector → review implementation and schemas → update local contracts and regression tests → pass tests → restart → have an administrator reset the circuit → explicitly validate read-only operations. Never automatically accept a newly advertised schema just to make a health check green.
+Remote contract upgrades follow this sequence: disable the connector → review implementation and schemas → update local contracts and regression tests → pass tests → restart → administrator resets the circuit → explicitly validate read-only operations. The runtime never automatically accepts a newly advertised schema.
 
 References: [Official Python SDK 1.x](https://github.com/modelcontextprotocol/python-sdk/tree/v1.x), [MCP security practices](https://modelcontextprotocol.io/docs/2025-11-25/tutorials/security/security_best_practices).

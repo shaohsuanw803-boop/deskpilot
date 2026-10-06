@@ -66,6 +66,26 @@ export async function request<T = Data>(path: string, options?: RequestInit): Pr
 export const get = <T = Data>(path: string) => request<T>(path);
 export const post = <T = Data>(path: string, body: Data = {}) =>
   request<T>(path, { method: 'POST', body: JSON.stringify(body) });
+
+// Preserve one pending intent across transport failures, without persisting user text.
+// A successful response completes it; a later deliberate submission gets a new key.
+export function createRunSubmitter() {
+  let pending: { fingerprint: string; key: string } | undefined;
+  return async (userId: string, body: Data): Promise<Data> => {
+    const fingerprint = JSON.stringify([userId, body]);
+    if (!pending || pending.fingerprint !== fingerprint) {
+      pending = { fingerprint, key: crypto.randomUUID() };
+    }
+    const attempt = pending;
+    const result = await request('/runs', {
+      method: 'POST',
+      body: JSON.stringify(body),
+      headers: { 'Idempotency-Key': attempt.key },
+    });
+    if (pending === attempt) pending = undefined;
+    return result;
+  };
+}
 export const patch = <T = Data>(path: string, body: Data) =>
   request<T>(path, { method: 'PATCH', body: JSON.stringify(body) });
 export const remove = (path: string) => request(path, { method: 'DELETE' });

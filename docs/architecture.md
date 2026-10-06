@@ -91,6 +91,8 @@ Access approvals bind the requester, parameters, skill version/digest, policy ve
 
 ## Persistence, memory and cost decisions
 
+Task submission has its own reliability boundary: before parsing, the ASGI middleware limits request bytes, total body reception time, and admitted mutations. A user-scoped submission receipt commits with the task, so an unchanged HTTP retry reads current state instead of invoking the graph twice. [Request and idempotency contract](runtime-reliability.md)
+
 | Decision                       | Why it matters                                                                                                                                                                                                                                                         |
 | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | SQLite owns business facts     | Document versions, tasks, approvals, preferences, usage and audit remain inspectable local records. Graph checkpoints support workflow resumption; they do not replace authoritative source validation.                                                                |
@@ -125,9 +127,11 @@ MCP 只开放已审核的服务状态查询和当前用户设备查询。调用�
 
 ### 工程取舍
 
+任务提交还有独立的可靠性边界：ASGI 中间件在解析前限制请求大小、完整请求体读取时间和写请求接纳量；用户隔离的提交凭证与任务同事务保存，相同 HTTP 重试读取当前状态，不重复调用工作流。见[入口与幂等契约](runtime-reliability.md#中文说明)。
+
 - **SQLite 保存业务事实，Qdrant 保存可重建索引。** 图检查点单独持久化，不能替代来源有效性检查；本地 Qdrant 使用单 worker、单客户端、串行访问，适合小型部署。
 - **记忆分层且有失效规则。** 任务进度、确认偏好和正式团队知识分别管理；偏好修改或删除后，依赖旧版本的历史不能再进入上下文。当前没有自动付费摘要服务。
 - **费用按调用尝试记账。** 每次尝试先检查权限并预留预算，供应商返回用量后结算；缺失用量保持未知，不能记成零。MCP 次数配额与模型账单是两回事。
 - **验证结果有适用范围。** 自动测试证明的是工程行为，中文虚构语料评测不能代表真实企业效果。演示身份、模拟权限变更、正则脱敏与本地审计还不能代替生产 SSO、隔离、完整 DLP 和防篡改审计。
 
-[记忆设计](memory-design.md) · [维护手册与生产差距](operations.md) · [最新双语工程验证](reports/bilingual-verification.md)
+[记忆设计](memory-design.md) · [维护手册与生产差距](operations.md) · [运行可靠性验证](reports/runtime-reliability-verification.md)

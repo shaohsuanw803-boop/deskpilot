@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
 from typing import Literal
 
-from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, Response, UploadFile
+from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Request, Response, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.exceptions import RequestValidationError
 from pydantic import BaseModel, ConfigDict, Field
@@ -14,9 +14,10 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 from .config import Settings
 from .db import Store, new_id
 from .knowledge import KnowledgeService
+from .http_boundary import RequestBoundaryMiddleware
 from .localization import error_text, request_locale, skill_display, system_text
 from .policy import USERS, PolicyError, User, own_or_staff, redact, require_role
-from .workflow import DeskService
+from .workflow import DeskService, IdempotencyConflict
 
 
 class Input(BaseModel):
@@ -126,6 +127,19 @@ def create_app(settings=None, seed=True):
         if request.url.path.startswith('/api'):
             response.headers['Cache-Control'] = 'no-store'
         return response
+
+    app.add_middleware(RequestBoundaryMiddleware,
+                       max_body_bytes=settings.http_max_body_bytes,
+                       max_upload_bytes=settings.http_max_upload_bytes,
+                       max_concurrent_requests=settings.http_max_concurrent_requests,
+                       body_timeout_seconds=settings.http_body_timeout_seconds)
+
+    @app.exception_handler(IdempotencyConflict)
+    async def idempotency_exception(request, exc):
+        detail = ('该提交标识已绑定其他任务，或对应任务已不可用。'
+                  if request_locale(request.headers.get('accept-language')) == 'zh-CN'
+                  else 'This request key is bound to a different or unavailable task.')
+        return JSONResponse({'detail': detail}, status_code=409)
 
     @app.exception_handler(PolicyError)
     async def policy_exception(request, exc):
@@ -252,10 +266,14 @@ def create_app(settings=None, seed=True):
         return app.state.knowledge.providers.connectivity_check()
 
     @app.post('/api/runs')
-    def run(body: RunInput, request: Request, user: User = Depends(current_user)):
+    def run(body: RunInput, request: Request, user: User = Depends(current_user),
+            idempotency_key: str | None = Header(default=None, alias='Idempotency-Key',
+                                                min_length=1, max_length=128, pattern=r'^[!-~]+$')):
         parameters = body.model_dump()
         parameters['locale'] = body.locale or request_locale(request.headers.get('accept-language'))
-        result = app.state.service.run(user, **parameters)
+        result = app.state.service.run(user, **parameters, idempotency_key=idempotency_key)
+        app.state.store.audit(user.id, 'run.request', result['id'],
+                              {'request_id': request.state.request_id})
         return visible_run(result, user)
 
     @app.get('/api/runs')

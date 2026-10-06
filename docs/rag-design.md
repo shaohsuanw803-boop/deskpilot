@@ -47,6 +47,6 @@ demo 的回答是来源摘录，不是伪造的模型总结。云端千问返回
 
 ## 单机存储约束
 
-Qdrant local 的 `path` 会持久化；同一目录被客户端独占锁定，不能由多个 Uvicorn worker 或第二个索引脚本同时打开。过滤可用，但 local 模式的 payload index 不提供服务端索引加速。它适用于这个小型作品，不是多实例高可用数据库。[Qdrant 官方客户端说明](https://github.com/qdrant/qdrant-client)
+Qdrant local 的 `path` 会持久化；同一目录被客户端独占锁定，不能由多个 Uvicorn worker 或第二个索引脚本同时打开。过滤可用，但 local 模式的 payload index 不提供服务端索引加速。当前存储方案适用于小型单机部署，不具备多实例高可用能力。[Qdrant 官方客户端说明](https://github.com/qdrant/qdrant-client)
 
-演示服务只启动一个 worker。导入和检索通过服务持有的实例协调。需要多进程、多机或较大数据量时迁移到 Qdrant server，并重新验证事务边界、索引版本和权限过滤；本项目不为展示目的引入 Docker 集群。
+演示服务只启动一个 worker。导入和检索通过服务持有的实例协调。多进程、多机或较大数据量部署需要迁移到 Qdrant server，并重新验证事务边界、索引版本和权限过滤。

@@ -20,15 +20,19 @@ class Settings(BaseSettings):
     rerank_endpoint: str = ''
     rerank_api_key: str = ''
     rerank_model: str = 'qwen3-rerank'
-    max_run_cost_cny: float = 0.50
-    max_daily_cost_cny: float = 10.00
-    max_agent_steps: int = 8
-    request_timeout_seconds: float = 30
-    max_retries: int = 2
-    llm_input_cny_per_million: float | None = None
-    llm_output_cny_per_million: float | None = None
-    embedding_cny_per_million: float | None = None
-    rerank_cny_per_million: float | None = None
+    max_run_cost_cny: float = Field(default=0.50, ge=0, allow_inf_nan=False)
+    max_daily_cost_cny: float = Field(default=10.00, ge=0, allow_inf_nan=False)
+    max_agent_steps: int = Field(default=8, ge=1, le=64)
+    request_timeout_seconds: float = Field(default=30, ge=1, le=120, allow_inf_nan=False)
+    max_retries: int = Field(default=2, ge=0, le=2)
+    llm_input_cny_per_million: float | None = Field(default=None, ge=0, allow_inf_nan=False)
+    llm_output_cny_per_million: float | None = Field(default=None, ge=0, allow_inf_nan=False)
+    embedding_cny_per_million: float | None = Field(default=None, ge=0, allow_inf_nan=False)
+    rerank_cny_per_million: float | None = Field(default=None, ge=0, allow_inf_nan=False)
+    http_max_body_bytes: int = Field(default=65536, ge=1024, le=1048576)
+    http_max_upload_bytes: int = Field(default=22020096, ge=1024, le=22020096)
+    http_max_concurrent_requests: int = Field(default=4, ge=1, le=16)
+    http_body_timeout_seconds: float = Field(default=15, ge=1, le=60, allow_inf_nan=False)
     price_as_of: str = ''
     mcp_remote_enabled: bool = False
     mcp_remote_url: str = ''

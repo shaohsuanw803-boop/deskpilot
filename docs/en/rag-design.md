@@ -49,6 +49,6 @@ Demo answers contain source excerpts, not fabricated model summaries. Cloud Qwen
 
 ## Single-machine storage constraints
 
-Qdrant local persists through its `path` configuration and takes an exclusive client lock on the directory. Multiple Uvicorn workers or a second indexing process cannot open the same directory concurrently. Filtering is supported, but local-mode payload indexes do not provide server-mode indexing acceleration. This suits a small portfolio application, not a highly available multi-instance database. See the [official Qdrant client documentation](https://github.com/qdrant/qdrant-client).
+Qdrant local persists through its `path` configuration and takes an exclusive client lock on the directory. Multiple Uvicorn workers or a second indexing process cannot open the same directory concurrently. Filtering is supported, but local-mode payload indexes do not provide server-mode indexing acceleration. This storage design supports small single-machine deployments and does not provide multi-instance high availability. See the [official Qdrant client documentation](https://github.com/qdrant/qdrant-client).
 
-The demo starts one worker. Import and retrieval coordinate through the instance owned by the service. For multiple processes, machines, or larger datasets, migrate to Qdrant server and revalidate transaction boundaries, index versions, and authorization filters. The project does not add a Docker cluster solely for presentation.
+The demo starts one worker. Import and retrieval coordinate through the instance owned by the service. Multiple processes, machines, or larger datasets require migration to Qdrant server and revalidation of transaction boundaries, index versions, and authorization filters.

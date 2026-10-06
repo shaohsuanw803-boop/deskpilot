@@ -75,9 +75,9 @@ Open [http://localhost:8000](http://localhost:8000). FastAPI serves `frontend/di
 
 ## Add cloud models later
 
-The default `APP_MODE=demo` does not call Qwen generation, embedding, or reranking. Those adapters are implemented, but their paid behavior and retrieval quality require your account and an actual evaluation. Follow the [Qwen setup guide](provider-setup.md) to configure the separate interfaces, prices, connectivity check, and explicit cloud indexing step. Incomplete cloud configuration produces an error instead of silently substituting a model.
+The default `APP_MODE=demo` does not call Qwen generation, embedding, or reranking. Those adapters are implemented, but paid behavior and retrieval quality still require a cloud evaluation. Follow the [Qwen setup guide](provider-setup.md) to configure the separate interfaces, prices, connectivity check, and explicit cloud indexing step. Incomplete cloud configuration produces an error instead of silently substituting a model.
 
-Keep keys in the ignored root `.env`; never put them in frontend code, documents, or screenshots. Remote MCP is a separate opt-in feature and is not enabled merely by configuring Qwen. See [MCP and harness](mcp-harness.md) before connecting an external server.
+Remote MCP is a separate opt-in feature and is not enabled merely by configuring Qwen. Supported transports and tool contracts are described in [MCP and harness](mcp-harness.md).
 
 ## Troubleshooting
 

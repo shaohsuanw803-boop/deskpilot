@@ -8,12 +8,13 @@
 
 An employee reports a VPN error. DeskPilot retrieves applicable knowledge, returns source-linked troubleshooting excerpts, and offers a ticket when evidence is insufficient. Software access requests pause for an authorized reviewer and resume from saved state. Resolved tickets can become reviewed team knowledge.
 
-Built as a runnable portfolio project for **VPN troubleshooting, office software support, and software access requests**. Includes a blue-and-white web workspace, fictional data, and a working demo without model API keys. The interface starts in English; select **中文** to switch.
+This engineering reference implementation covers **VPN troubleshooting, office software support, and software access requests**. It includes a web workspace, fictional data, and an offline demo without model API keys. The interface supports English and Chinese, with English as the default.
 
 ## Engineering highlights
 
 - **RAG with a knowledge lifecycle.** Publication, version, and access checks govern retrieval and citations. Optional cloud retrieval combines BM25, vectors, RRF, and reranking; Qwen selects excerpts that the backend verifies against current sources. [RAG design →](docs/en/rag-design.md)
 - **Approvals that survive restarts.** Requests bind parameters and skill versions. Approval consumption, simulated business changes, and idempotency receipts commit in one SQLite transaction. [Workflow source →](backend/deskpilot/workflow.py)
+- **Bounded, retry-safe task submission.** User-scoped idempotency receipts prevent duplicate runs after a lost response. Body limits, an absolute receive deadline, admission limits, and request IDs cover the HTTP boundary. [Reliability contract →](docs/runtime-reliability.md)
 - **MCP inside an execution harness.** Two reviewed tool contracts run through identity binding, schema checks, before/after/error hooks, quotas, deadlines, and a persistent circuit breaker. Tool observations stay separate from knowledge evidence and cloud context. [Harness design →](docs/en/mcp-harness.md)
 - **Explicit memory and cost controls.** Task state, confirmed preferences, and reviewed knowledge have separate lifecycles. Context is revalidated on reuse; model calls reserve budgets and keep unknown usage visible. [Memory design →](docs/en/memory-design.md)
 
@@ -91,12 +92,12 @@ flowchart TB
 
 ## Measured evidence
 
-Results from the **2026-10-06 bilingual release**; the badge above links to current CI.
+Engineering checks from the **2026-10-06 reliability update**; retrieval metrics retain their dated evaluation scope. The badge links to current CI.
 
 | Check                             | Recorded result                                      | Evidence                                                               |
 | --------------------------------- | ---------------------------------------------------- | ---------------------------------------------------------------------- |
-| Backend regressions               | **104 passed**                                       | [Verification report](docs/reports/bilingual-verification.md)          |
-| Frontend locale/API tests         | **6 passed**; TypeScript and production build passed | [Verification report](docs/reports/bilingual-verification.md)          |
+| Backend regressions               | **195 passed**                                       | [Verification report](docs/reports/runtime-reliability-verification.md)          |
+| Frontend locale/API/retry tests         | **9 passed**; TypeScript and production build passed | [Verification report](docs/reports/runtime-reliability-verification.md)          |
 | Local BM25 development set        | **Recall@10: 94.44% · MRR@5: 93.06%**                | [Regression and dataset scope](docs/reports/bilingual-verification.md) |
 | Paid cloud retrieval / generation | **Unmeasured**                                       | [Evaluation methodology](docs/en/evaluation.md)                        |
 

@@ -18,33 +18,21 @@
 | `service_status` | `service`: vpn / office / identity | 服务、状态、摘要、观测时间、模拟标记 | 枚举参数，摘要最多 500 字 |
 | `asset_lookup` | 后端绑定的 `user_id` | 用户、设备、系统、纳管状态、模拟标记 | 任何角色都只能查自己；结果用户也必须匹配 |
 
-完整输入/输出 JSON Schema 见 `backend/deskpilot/mcp_contracts.py`。客户端初始化后列出工具，校验名称及输入/输出 Schema 摘要，然后才发送 `tools/call`。工具的 description 和 annotations 不授予权限，也不会进入模型提示词。远端额外提供的工具不会自动注册。必须逐项匹配本项目契约，不能把任意第三方 MCP 地址填入后宣称兼容。
+完整输入/输出 JSON Schema 见 [`mcp_contracts.py`](../backend/deskpilot/mcp_contracts.py)。客户端初始化后列出工具，校验名称及输入/输出 Schema 摘要，然后才发送 `tools/call`。工具的 description 和 annotations 不授予权限，也不会进入模型提示词。远端额外提供的工具不会自动注册；接口逐项匹配本项目契约后才能调用。
 
 本地服务使用固定 Python 模块启动，无任意命令参数入口。SDK 只继承其系统环境变量白名单，项目仅增加 Python 编码和模块路径；不复制千问密钥，不读取 `.env`。这不是操作系统沙箱：子进程仍有当前 OS 用户的文件权限，因此只运行仓库内审核过的服务。
 
 不提供任意文件读取、shell、数据库写入、邮件发送、采样或交互式授权回调。MCP 返回值视为外部数据，验证大小/结构、脱敏后只存本地；不进入 RAG 证据、用户历史答案或千问消息。页面以文本呈现，不执行其中的指令或 HTML。
 
-## 接真实远程服务
+## 远程连接器
 
-在本机 `.env` 中填写，禁止把密钥放进 README、前端 `VITE_*`、URL 参数或工单：
+远程连接器支持 **Streamable HTTP**，复用上表的两个工具契约，由后端 Bearer 凭据认证。配置项与默认值见 [`.env.example`](../.env.example) 中的 `MCP_*` 字段；启用后，工作台提供“企业 IT 连接器”入口。
 
-```dotenv
-MCP_REMOTE_ENABLED=true
-MCP_REMOTE_URL=https://你的审核主机/mcp
-MCP_REMOTE_ALLOWED_HOST=你的审核主机
-MCP_REMOTE_TOKEN=
-MCP_TIMEOUT_SECONDS=15
-MCP_MAX_RESULT_BYTES=16384
-MCP_DAILY_CALL_LIMIT=200
-MCP_FAILURE_THRESHOLD=3
-MCP_COOLDOWN_SECONDS=60
-```
-
-`MCP_REMOTE_TOKEN` 使用该服务独立的最小只读权限凭据，不复用千问 Key。重启后选择“企业 IT 连接器”进行显式查询。`APP_MODE=demo` 禁止千问请求，但远程 MCP 是独立开关；两者的授权不能混为一谈。选远程连接器时会向该服务发送服务枚举或当前用户 ID，不发送问题全文、知识片段与聊天历史。
+`APP_MODE=demo` 控制千问请求，`MCP_REMOTE_ENABLED` 独立控制远程 MCP。远程调用的业务参数仅包含服务枚举或当前用户 ID，不包含问题全文、知识片段与聊天历史。
 
 支持 Streamable HTTP、HTTPS 443、固定允许主机；拒绝用户信息、查询参数、重定向与非公网 DNS 结果。每个 HTTP 请求前复核地址和运行状态，关闭环境代理继承。SDK 握手、工具列举与工具调用均受总超时限制。HTTP 请求异常不会保存原始异常或认证头；MCP SDK transport/session 日志通过过滤器省略原始 payload 与异常正文。应用不主动重发 tools/call，SDK 内部事件流重连不等同于业务操作重试。
 
-本版使用维护人配置的 Bearer 凭据，不实现 OAuth 登录/刷新、用户 token 透传、多租户企业目录映射。远端必须自行校验服务凭据与用户数据范围；演示 `alice` 等 ID 不能直接作为生产企业身份。专有内网 MCP 应通过经过设计的出站网关接入，不能简单关闭 SSRF 检查。
+本版不实现 OAuth 登录/刷新、用户 token 透传、多租户企业目录映射。远端负责校验服务凭据与用户数据范围；演示 `alice` 等 ID 不对应生产企业身份。默认网络策略不支持专有内网 MCP；此类部署需要额外的出站网关设计。
 
 ## Harness 负责什么
 
@@ -81,8 +69,8 @@ MCP 每次真实业务调用消耗一个任务步骤；默认整个任务最多 
 .venv\Scripts\python.exe scripts/check_secrets.py --history
 ```
 
-`check_secrets.py` 只读 Git index 或已提交历史，报告文件和行号，不打印命中的密钥值；已核实的旧合成密钥夹具采用精确测试路径与 SHA-256 例外，不豁免整个测试目录。它是启发式泄露检查，不替代完整的 secret scanning。若密钥已提交，即使随后删除也要先在供应商处吊销/轮换，再清理历史和副本。
+`check_secrets.py` 只读 Git index 或已提交历史，报告文件和行号，不打印命中的密钥值；已核实的旧合成密钥夹具采用精确测试路径与 SHA-256 例外，不豁免整个测试目录。它是启发式泄露检查，不替代完整的 secret scanning。
 
-更新远端工具时：停用远程连接器 → 审查服务实现及 Schema → 更新本地契约与回归测试 → 测试通过 → 重启 → 管理员重置熔断 → 显式只读联调。不要为了让健康检查变绿而自动接受服务返回的新 Schema。
+远端契约升级流程：停用远程连接器 → 审查服务实现及 Schema → 更新本地契约与回归测试 → 测试通过 → 重启 → 管理员重置熔断 → 显式只读联调。运行时不会自动接受服务返回的新 Schema。
 
 参考：[官方 Python SDK 1.x](https://github.com/modelcontextprotocol/python-sdk/tree/v1.x)、[MCP 安全实践](https://modelcontextprotocol.io/docs/2025-11-25/tutorials/security/security_best_practices)。

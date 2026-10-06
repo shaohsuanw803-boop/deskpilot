@@ -1,9 +1,9 @@
 # Implementation contract
 
-This contract coordinates independently implemented modules. All application IDs are strings.
+This document summarizes core module interfaces. The [API source](../backend/deskpilot/api.py) and generated `/docs` OpenAPI specification define the complete current HTTP contract. All application IDs are strings.
 SQLite is the source of truth, Qdrant local is a disposable/rebuildable vector index.
 
-## Shared Python interfaces (owned by coordinator)
+## Shared Python interfaces
 
 - `Settings` in `deskpilot.config`: pydantic settings, lowercase env field names; `app_mode` demo/cloud,
   `data_dir: Path`, `repo_root: Path`, three provider config groups from .env.example; `cloud_missing()` -> list[str].
@@ -18,7 +18,7 @@ SQLite is the source of truth, Qdrant local is a disposable/rebuildable vector i
   `require_role(user,*roles)`, `check_outbound(texts)` rejects secret patterns.
   `PolicyError` inherits ValueError. External content is always untrusted data.
 
-## RAG subsystem (owned by RAG implementer)
+## RAG subsystem
 
 `KnowledgeService(store, settings)`:
 - `ingest(filename: str, content: bytes, metadata: dict, user: User, document_id: str|None=None)->dict`:
@@ -35,21 +35,22 @@ SQLite is the source of truth, Qdrant local is a disposable/rebuildable vector i
 - Metadata common fields: `title,product,product_version,owner,roles:list[str],cloud_allowed:bool,
   allowed_users:list[str],source_ticket_id`. Document lists include `id,title,status,version,active_version,
   product,product_version,cloud_allowed,roles,chunk_count,updated_at`.
-- Use `ProviderGateway` with calls for generation, embeddings, rerank; tests with mocked HTTP responses.
+- `ProviderGateway` handles generation, embeddings, and reranking; protocol tests use mocked HTTP responses.
 - Jobs stored as `ingestion_job`, documents `document`, chunks `chunk`; other needed kinds unrestricted.
 - `seed` CLI imports `fixtures/knowledge/*.md` and matching JSON catalog entries.
 - Permission checks before retrieval, cloud transmission, response AND source fetch. Secret checks cover all
   outbound material. Restricted candidates stay local and are NOT sent to cloud reranker/generator.
-- Do not call external APIs in demo. No fake vectors. Changing embedding model/dimensions requires rebuild.
+- Demo retrieval makes no model-provider requests and does not synthesize vectors. Changing embedding model/dimensions requires an index rebuild.
 
-## API contract (owned by coordinator)
+## Core API contract
 
 All `/api/*`; credentials same-origin cookie (demo profile selector creates server session).
 Response errors `{detail: string}`. List responses `{items:[...]}`. Startup seeds fixtures once.
 
 - `GET /bootstrap` -> `{mode,user,users,summary:{documents,runs,tickets,approvals},config:{cloud_ready,missing,capabilities}}`
 - `POST /session {user_id}` -> `{user}` (sets HttpOnly cookie).
-- `POST /runs {message,thread_id?,ticket_id?,cloud_allowed?:bool}` -> run object.
+- `POST /runs {message,thread_id?,ticket_id?,cloud_allowed?:bool,mcp_server?,locale?}` -> run object.
+  The optional `Idempotency-Key` header binds one user's original payload to a durable task; mismatched reuse returns `409`. See [request boundaries and replay semantics](runtime-reliability.md).
   Run `{id,thread_id,user_id,status,answer,citations,retrieval,events,created_at,skill_id,skill_version,approval_id?}`.
   Status `completed|awaiting_approval|needs_clarification|no_evidence|degraded|failed|rejected`.
 - `GET /runs` -> own items (it/admin all); `GET /runs/{id}`; `GET /runs/{id}/events` SSE persisted events.
@@ -72,10 +73,10 @@ Response errors `{detail: string}`. List responses `{items:[...]}`. Startup seed
 
 ## Frontend
 
-React TS + Vite, five workspaces: tasks, knowledge, skills, memory, operations.
-Use backend calls, no fabricated statistics, visibly show demo/cloud/degraded mode.
+React TS + Vite, six workspaces: tasks, knowledge, skills, memory, connectors, operations.
+Workspaces read backend APIs and display demo/cloud/degraded mode alongside actual records.
 Vite proxies `/api` to localhost:8000. Default frontend localhost:5173.
-Source IDs URL encode using encodeURIComponent. Render untrusted text safely.
+Source IDs are URL-encoded using encodeURIComponent. Untrusted text is rendered without executing HTML.
 
 ## Corpus
 
@@ -83,4 +84,4 @@ Source IDs URL encode using encodeURIComponent. Render untrusted text safely.
 cloud_allowed,allowed_users?}`. 40 Markdown files. All fictional and clearly labeled.
 `fixtures/eval/questions.json` array: `{id,family,split:'dev'|'test',query,user_id,
 expected_document_ids:list[str],expected_behavior:'answer'|'clarify'|'abstain'|'deny',category}`.
-80 cases; family never crosses split. IDs match catalog. Keep evaluator general, no query-specific answer routing.
+80 cases; family never crosses split. IDs match the catalog; evaluation uses the general retrieval path without query-specific answer routing.

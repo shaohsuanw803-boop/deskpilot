@@ -22,10 +22,10 @@ The retrieval comparison reran `python scripts/evaluate.py --split dev --output 
 
 - First opened the rebuilt app in English, with an explicit 中文 button, English page title and all six workspace labels.
 - Typed an English VPN question, switched to Chinese, then back to English. The full draft and selected identity were unchanged. Switching itself submitted no task.
-- Selected Chinese explicitly and reloaded: Chinese remained selected. Switched back to English and left the deliverable in English.
+- Selected Chinese explicitly and reloaded: Chinese remained selected. Switching back to English also succeeded.
 - Submitted `Windows 11 Starbridge VPN 5.2 error 809 connection timeout` with local MCP preflight. Both MCP calls succeeded; RAG showed English section headings and five original-language source citations. Fictional MCP data was visibly separate from knowledge evidence and stayed in its original language.
 - Inspected all six workspaces: knowledge controls, skill/version display labels, memory, connectors and operations were English. Source titles, prior user questions and stored instructions were intentionally unchanged.
-- Checked the English layout at 390px and 1280px widths. The narrow header keeps the language control available; the desktop retains the blue-and-white layout. Restored the browser viewport afterward.
+- Checked the English layout at 390px and 1280px widths. The narrow header keeps the language control available; the desktop retains the blue-and-white layout.
 
 ## Documentation and limits
 

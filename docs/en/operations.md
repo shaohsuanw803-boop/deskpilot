@@ -14,7 +14,7 @@ The repository maintainer owns code, dependency, skill, and knowledge changes. �
 | Embedding model/dimensions | Rebuild the index; never mix old vectors | Project maintainer |
 | Dependency upgrade | Small batches, Python tests, frontend build, and startup checks | Project maintainer |
 
-Release records should identify the commit, Python/Node versions, model names, price date, evaluation-report path, and known failures. “A smarter model” is not a useful release record. When an upstream interface is deprecated, add adapter contract tests before changing request formats; never switch silently.
+Release records identify the commit, Python/Node versions, model names, price date, evaluation-report path, and known failures. Adapter contract tests validate migrations away from deprecated upstream interfaces and make request-format changes traceable.
 
 For localization changes, verify that a fresh browser starts in English, Chinese requires an explicit selection, drafts and selected tasks survive a language switch, and existing evidence remains verbatim. Interface localization must not alter authorization or issue mutation requests.
 
@@ -53,7 +53,7 @@ Restore into a new data directory and point a new `DATA_DIR` at it, preserving t
 
 ## Memory and deletion boundaries
 
-Task state, confirmed personal preferences, and shared team knowledge are different data classes. After a preference is deleted, subsequent runs and recovery paths must not restore it from an old summary or cache. Team knowledge requires review before publication. Checkpoints and audits are historical records. Local deletion does not recall backups or requests already sent to providers. Do not claim legally complete end-to-end erasure.
+Task state, confirmed personal preferences, and shared team knowledge are different data classes. After a preference is deleted, subsequent runs and recovery paths must not restore it from an old summary or cache. Team knowledge requires review before publication. Checkpoints and audits are historical records. Local deletion does not recall backups or requests already sent to providers and provides no end-to-end erasure guarantee across all copies and external systems.
 
 ## What production still needs
 

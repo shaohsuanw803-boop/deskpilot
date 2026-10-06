@@ -1,5 +1,6 @@
 import argparse
 import base64
+from copy import deepcopy
 import json
 
 from .config import Settings
@@ -15,7 +16,12 @@ def main():
     settings = Settings()
     if args.command == 'serve':
         import uvicorn
-        uvicorn.run('deskpilot.api:app', host='127.0.0.1', port=args.port, workers=1)
+        from uvicorn.config import LOGGING_CONFIG
+        log_config = deepcopy(LOGGING_CONFIG)
+        log_config['loggers']['deskpilot.http'] = {
+            'handlers': ['default'], 'level': 'INFO', 'propagate': False}
+        uvicorn.run('deskpilot.api:app', host='127.0.0.1', port=args.port, workers=1,
+                    log_config=log_config)
         return
     from .api import seed_knowledge
     from .knowledge import KnowledgeService

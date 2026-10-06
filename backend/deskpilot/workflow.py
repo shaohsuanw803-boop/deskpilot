@@ -17,6 +17,10 @@ from .policy import POLICY_VERSION, USERS, PolicyError, check_outbound, own_or_s
 from .skills import SkillRegistry
 
 
+class IdempotencyConflict(ValueError):
+    """An accepted request key cannot authorize a different or missing task."""
+
+
 class RunState(TypedDict, total=False):
     run_id: str
     user_id: str
@@ -311,32 +315,62 @@ class DeskService:
         run['completed_at'] = now() if run['status'] != 'awaiting_approval' else None
         return self.store.put('run', run)
 
-    def run(self, user, message, thread_id=None, ticket_id=None, cloud_allowed=True, mcp_server=None, locale='en'):
+    def run(self, user, message, thread_id=None, ticket_id=None, cloud_allowed=True, mcp_server=None, locale='en',
+            idempotency_key=None):
         with self.lock:
             if locale not in ('en', 'zh-CN'):
                 raise ValueError('Unsupported locale; use en or zh-CN.')
             if not message.strip() or len(message) > 8000:
                 raise PolicyError('问题不能为空，且最多 8,000 个字符。')
-            thread_id = thread_id or new_id('thread')
-            thread = self.store.get('thread', thread_id)
-            if thread and thread['user_id'] != user.id:
-                raise PolicyError('无权继续此会话。')
-            if ticket_id:
-                ticket = self.store.get('ticket', ticket_id)
-                if not ticket:
-                    raise PolicyError('工单不存在。')
-                own_or_staff(user, ticket, 'owner_id')
-            run_id = new_id('run')
-            thread = thread or {'id': thread_id, 'user_id': user.id, 'initial_run_id': run_id,
-                                'progress_run_ids': []}
-            if re.search(r'已经|已尝试|已完成|仍然|目前|现在|重启|更换|\b(?:already|tried|completed|still|restarted|rebooted|now)\b', message, re.I):
-                thread['progress_run_ids'] = (thread.get('progress_run_ids', []) + [run_id])[-8:]
-            self.store.put('thread', thread)
-            state = {'run_id': run_id, 'user_id': user.id, 'message': message.strip(),
-                     'thread_id': thread_id, 'ticket_id': ticket_id, 'cloud_allowed': cloud_allowed,
-                     'mcp_server': mcp_server, 'locale': locale}
-            self.store.put('run', {**state, 'id': run_id, 'status': 'running', 'events': [],
-                                   'answer': '', 'citations': [], 'retrieval': {}, 'steps': 0})
+            receipt_id = request_digest = None
+            if idempotency_key is not None:
+                if not isinstance(idempotency_key, str) or not re.fullmatch(r'[!-~]{1,128}', idempotency_key):
+                    raise ValueError('Idempotency-Key must contain 1–128 printable ASCII characters without whitespace.')
+                # Bind the client's original request, before generating an implicit thread ID.
+                # Persist hashes only: client correlation values can contain private data.
+                scope = json.dumps(['run:v1', user.id, idempotency_key], separators=(',', ':'), ensure_ascii=False)
+                receipt_id = hashlib.sha256(scope.encode()).hexdigest()
+                payload = {'message': message, 'thread_id': thread_id, 'ticket_id': ticket_id,
+                           'cloud_allowed': cloud_allowed, 'mcp_server': mcp_server, 'locale': locale}
+                request_digest = hashlib.sha256(json.dumps(payload, sort_keys=True, ensure_ascii=False,
+                                                          separators=(',', ':')).encode()).hexdigest()
+            with self.store.transaction():
+                if receipt_id:
+                    receipt = self.store.get('run_request', receipt_id)
+                    if receipt:
+                        if receipt.get('user_id') != user.id or receipt.get('request_digest') != request_digest:
+                            raise IdempotencyConflict('Idempotency-Key was already used for a different request.')
+                        existing_run = self.store.get('run', receipt.get('run_id', ''))
+                        if not existing_run or existing_run.get('user_id') != user.id:
+                            raise IdempotencyConflict('The task recorded for this Idempotency-Key is unavailable.')
+                        # Return current state, never a cached answer or a second graph invocation.
+                        # The HTTP layer still reauthorizes citations and memory dependencies.
+                        return existing_run
+                thread_id = thread_id or new_id('thread')
+                thread = self.store.get('thread', thread_id)
+                if thread and thread['user_id'] != user.id:
+                    raise PolicyError('无权继续此会话。')
+                if ticket_id:
+                    ticket = self.store.get('ticket', ticket_id)
+                    if not ticket:
+                        raise PolicyError('工单不存在。')
+                    own_or_staff(user, ticket, 'owner_id')
+                run_id = new_id('run')
+                thread = thread or {'id': thread_id, 'user_id': user.id, 'initial_run_id': run_id,
+                                    'progress_run_ids': []}
+                if re.search(r'已经|已尝试|已完成|仍然|目前|现在|重启|更换|\b(?:already|tried|completed|still|restarted|rebooted|now)\b', message, re.I):
+                    thread['progress_run_ids'] = (thread.get('progress_run_ids', []) + [run_id])[-8:]
+                self.store.put('thread', thread)
+                state = {'run_id': run_id, 'user_id': user.id, 'message': message.strip(),
+                         'thread_id': thread_id, 'ticket_id': ticket_id, 'cloud_allowed': cloud_allowed,
+                         'mcp_server': mcp_server, 'locale': locale}
+                self.store.put('run', {**state, 'id': run_id, 'status': 'running', 'events': [],
+                                       'answer': '', 'citations': [], 'retrieval': {}, 'steps': 0})
+                if receipt_id:
+                    # This receipt acknowledges admission; run.status owns execution progress.
+                    # Keep the binding for failed/interrupted tasks as well as successful ones.
+                    self.store.put('run_request', {'id': receipt_id, 'user_id': user.id,
+                        'request_digest': request_digest, 'run_id': run_id, 'status': 'accepted'})
             try:
                 result = self.graph.invoke(state, self._config(run_id), durability='sync')
                 return self._finish(run_id, result)

@@ -2,7 +2,7 @@
 
 [Project README](../../README.md) · [中文版](../implementation-status.md)
 
-Scope: a complete local IT service desk portfolio application, Qwen cloud adapters, and RAG with source and authorization checks. **Implemented** means code has been delivered; it does not mean production acceptance or validated real-model cloud quality.
+Scope: a local IT service desk reference implementation, Qwen cloud adapters, and RAG with source and authorization checks. **Implemented** means code has been delivered; it does not mean production acceptance or validated real-model cloud quality.
 
 - [x] SQLite persistence, demo identities, authorization policies, and module contracts.
 - [x] Document parsing, version publication/withdrawal, administrator preview, import retries, hybrid retrieval, and citation validation.
@@ -19,8 +19,9 @@ Scope: a complete local IT service desk portfolio application, Qwen cloud adapte
 - [x] September 30, 2026 backend regression: **81 passed in 50.71s**; Ruff, frontend production build, and Prettier passed. The uv lockfile's offline consistency check passed on September 29, 2026.
 - [x] October 6, 2026 MCP regression: **96 passed in 58.30s**; Ruff, lockfile consistency, TypeScript, Vite, and Prettier passed. See the [MCP verification record](../reports/mcp-harness-verification.md).
 - [x] October 6, 2026 bilingual regression: **104 passed in 68.73s**, six frontend language tests, Ruff, TypeScript, Vite and Prettier passed. See the [bilingual verification record](../reports/bilingual-verification.md).
+- [x] October 6, 2026 reliability update: **195 passed in 67.01s**, nine frontend tests, Ruff, TypeScript, Vite and Prettier passed. User-scoped task submission idempotency, pre-parser body limits, an absolute reception deadline, bounded mutation admission, request correlation and finite budgets have regression coverage. See the [runtime verification record](../reports/runtime-reliability-verification.md).
 - [x] Blue-and-white browser checks and JPG screenshots are saved. The first-version recording retains the earlier color scheme. The 390px layout was checked; mobile-menu interaction still needs physical-device review. Dates and exact coverage are recorded in [browser verification](../browser-verification.md).
 
-The bilingual update makes the interface English by default, with an explicit Chinese switch. Stored source evidence and previous answers retain their original language. The historical test counts above refer to their dated releases; consult the current README, verification report, and CI for the bilingual change's actual results.
+The bilingual update makes the interface English by default, with an explicit Chinese switch. Stored source evidence and previous answers retain their original language. The historical test counts above refer to their dated releases; consult the current README, verification report, and CI for current results.
 
 Real paid Qwen calls, dense/hybrid/reranking cloud quality, and actual cloud costs remain **unmeasured**. They require configured credentials and explicit execution; simulated HTTP tests and BM25 reports cannot substitute for them. The remote MCP protocol adapter has HTTP fixture coverage, while real enterprise-service integration still needs validation. Production SSO, real access writes, tamper-proof auditing, and enterprise compliance certification are **not implemented**.

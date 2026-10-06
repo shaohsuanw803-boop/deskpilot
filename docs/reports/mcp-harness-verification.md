@@ -16,14 +16,14 @@
 
 浏览器检查覆盖六工作区导航、连接器启用/未配置展示、真实本地 MCP 服务状态查询、观测卡与调用记录。组合诊断中两个 MCP 查询成功，页面同时显示本人 Windows 11 设备和 VPN 观测，RAG 返回 5 个可点击来源及排查步骤。自定义预览端口暴露了既有同源写入误拦截，新增失败测试后修复；其他来源继续返回 403。
 
-发布前 Git index 扫描：140 个文本文件版本，未发现未解释的密钥命中；其他独立项目、`.env`、数据库和缓存均未暂存。
+发布前 Git index 扫描：140 个文本文件版本，未发现未解释的密钥命中。
 
 真实远端服务、千问付费调用、远端吞吐与生产网络隔离未测。HTTP MockTransport 通过只说明客户端协议与契约处理符合本地测试，不代表任何第三方服务已通过企业接入验收。界面和测试使用虚构 IT 数据。
 
 ## 公开发布核验
 
-已通过已连接的 GitHub 插件发布到 [shaohsuanw803-boop/deskpilot](https://github.com/shaohsuanw803-boop/deskpilot)。源码发布提交 `fe0adc4` 的 Git tree 为 `2a8a281ec20a059c81ffeeb32994c9939564a034`，与本地已测试版本完全一致；共 143 个项目文件，媒体内容哈希也一致。浏览器已确认 README 两张 Mermaid 图正常渲染。提交历史扫描核验 164 个文本版本，无未解释命中；未上传其他独立项目、密钥或运行数据库。
+源码发布提交 `fe0adc4` 的 Git tree 为 `2a8a281ec20a059c81ffeeb32994c9939564a034`，与已测试版本一致；共 143 个项目文件，媒体内容哈希一致。浏览器已确认 README 两张 Mermaid 图正常渲染。提交历史扫描核验 164 个文本版本，无未解释命中。
 
-远程 CI 实际状态见 [GitHub Actions](https://github.com/shaohsuanw803-boop/deskpilot/actions)。本地 Git 原开发分支保留；发布分支跟踪 `origin/main`。本次使用连接器发布，命令行 Git 的写入凭据仍需用户将来自行配置，未复制或提取插件密钥。
+远程 CI 状态见 [GitHub Actions](https://github.com/shaohsuanw803-boop/deskpilot/actions)。
 
 首次远程 Windows、Linux 和前端检查均通过。归档步骤提示 `.cache` 隐藏目录被默认排除，随后将上传范围明确限制为生成的 JSON / Markdown 两个报告，启用隐藏路径支持并在缺少报告时失败。CI Action 按各自官方仓库更新为 v7，checkout 禁止持久保存凭据；没有扩大工作流权限或上传整个缓存目录。

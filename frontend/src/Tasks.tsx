@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import {
   array,
+  createRunSubmitter,
   date,
   displayUserName,
   errorText,
@@ -99,6 +100,7 @@ export default function Tasks({ user, mode, revision, onChange, onSource, onTrac
   const [resolveTicket, setResolveTicket] = useState<Data | null>(null);
   const [resolution, setResolution] = useState('');
   const input = useRef<HTMLTextAreaElement>(null);
+  const submitRun = useRef(createRunSubmitter());
   const list = array(runs.data?.items).sort((a, b) =>
     (b.created_at || '').localeCompare(a.created_at || ''),
   );
@@ -126,7 +128,7 @@ export default function Tasks({ user, mode, revision, onChange, onSource, onTrac
     setSending(true);
     setError('');
     try {
-      const run = await post('/runs', {
+      const run = await submitRun.current(user.id, {
         message: question,
         locale,
         ...(selected?.thread_id ? { thread_id: selected.thread_id } : {}),

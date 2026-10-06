@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
+import { randomUUID } from 'node:crypto';
 import ts from 'typescript';
 
 const source = (name) =>
@@ -10,6 +11,25 @@ const source = (name) =>
   }).outputText;
 const localeCode = source('i18n');
 const apiCode = source('api');
+
+function apiFixture(fetch) {
+  const f = fixture();
+  const exports = {};
+  vm.runInContext(
+    apiCode,
+    vm.createContext({
+      exports,
+      module: { exports },
+      require: (name) => (name === './i18n' ? f.locale : f.react),
+      Headers,
+      FormData,
+      Response,
+      fetch,
+      crypto: { randomUUID },
+    }),
+  );
+  return exports;
+}
 
 function fixture({ saved, blocked = false, storage: existing } = {}) {
   const storage = existing || new Map(saved ? [['deskpilot.locale', saved]] : []);
@@ -166,4 +186,56 @@ test('JSON and multipart requests carry the explicit locale without overwriting 
   assert.equal(calls[1].options.headers.has('Content-Type'), false);
   assert.equal(calls[1].options.headers.get('X-Test'), 'kept');
   assert.equal(calls[1].options.body, form);
+});
+
+test('a run submission retries a lost response with the same key, then rotates after success', async () => {
+  const keys = [];
+  const api = apiFixture(async (url, options) => {
+    assert.equal(url, '/api/runs');
+    keys.push(options.headers.get('Idempotency-Key'));
+    if (keys.length === 1) throw new Error('Response lost after server accepted the task');
+    return new Response('{"id":"run_one"}', { headers: { 'Content-Type': 'application/json' } });
+  });
+  const submit = api.createRunSubmitter();
+  const body = { message: 'VPN 809', locale: 'en', cloud_allowed: false };
+  await assert.rejects(submit('alice', body));
+  assert.equal((await submit('alice', body)).id, 'run_one');
+  await submit('alice', body);
+  assert.match(keys[0], /^[a-f0-9-]{36}$/);
+  assert.equal(keys[0], keys[1]);
+  assert.notEqual(keys[1], keys[2]);
+});
+
+test('changed intent, locale or identity gets a new request key after a failed submission', async () => {
+  const keys = [];
+  const api = apiFixture(async (_url, options) => {
+    keys.push(options.headers.get('Idempotency-Key'));
+    throw new Error('Connection lost');
+  });
+  const submit = api.createRunSubmitter();
+  for (const [user, body] of [
+    ['alice', { message: 'VPN 809', locale: 'en' }],
+    ['alice', { message: 'VPN 809', locale: 'zh-CN' }],
+    ['alice', { message: 'Office issue', locale: 'zh-CN' }],
+    ['bob', { message: 'Office issue', locale: 'zh-CN' }],
+  ])
+    await assert.rejects(submit(user, body));
+  assert.equal(new Set(keys).size, 4);
+});
+
+test('overload keeps the pending submission key and does not retry automatically', async () => {
+  const keys = [];
+  const api = apiFixture(async (_url, options) => {
+    keys.push(options.headers.get('Idempotency-Key'));
+    return new Response('{"detail":"Busy"}', {
+      status: 503,
+      headers: { 'Content-Type': 'application/json', 'Retry-After': '1' },
+    });
+  });
+  const submit = api.createRunSubmitter();
+  const body = { message: 'I need standard access to Visio.' };
+  await assert.rejects(submit('alice', body), { status: 503 });
+  assert.equal(keys.length, 1);
+  await assert.rejects(submit('alice', body), { status: 503 });
+  assert.equal(keys[0], keys[1]);
 });
