@@ -1,3 +1,4 @@
+import { documentTitle } from './knowledgeNames';
 import { translate as t, useI18n } from './i18n';
 import { useCallback, useRef, useState } from 'react';
 import {
@@ -303,7 +304,7 @@ export default function App() {
       {configOpen && <Configuration user={data.user} mode={data.mode} onClose={closeConfig} />}
       {source && (
         <Modal
-          title={source.title || source.document?.title || t('知识来源', 'Knowledge source')}
+          title={documentTitle(source) || t('知识来源', 'Knowledge source')}
           onClose={closeSource}
           wide
         >

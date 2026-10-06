@@ -1,3 +1,4 @@
+import { documentTitle } from './knowledgeNames';
 import { translate as t, useI18n } from './i18n';
 import { useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
@@ -320,7 +321,7 @@ export function SourceCard({
     <button className="source-card" onClick={() => onOpen(id)} disabled={!id}>
       <span className="source-number">{String(index + 1).padStart(2, '0')}</span>
       <div>
-        <strong>{source.title || t('知识来源', 'Knowledge source')}</strong>
+        <strong>{documentTitle(source) || t('知识来源', 'Knowledge source')}</strong>
         <span>
           {source.version ? `v${source.version} · ` : ''}
           {source.anchor || source.document_id || t('查看原文片段', 'View source excerpt')}

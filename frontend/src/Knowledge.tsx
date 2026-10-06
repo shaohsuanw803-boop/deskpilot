@@ -1,3 +1,4 @@
+import { documentTitle } from './knowledgeNames';
 import { translate as t, useI18n } from './i18n';
 import { useRef, useState } from 'react';
 import {
@@ -65,7 +66,7 @@ export default function Knowledge({ user, revision, onChange, onSource }: Props)
   const items = array(documents.data?.items);
   const filtered = items.filter(
     (item) =>
-      [item.title, item.product, item.product_version, item.owner]
+      [item.title, documentTitle(item), item.product, item.product_version, item.owner]
         .join(' ')
         .toLowerCase()
         .includes(search.toLowerCase()) &&
@@ -232,7 +233,7 @@ export default function Knowledge({ user, revision, onChange, onSource }: Props)
                         <button className="document-title" onClick={() => setDetail(document)}>
                           <FileMark />
                           <span>
-                            <strong>{document.title}</strong>
+                            <strong>{documentTitle(document)}</strong>
                             <small>
                               {document.product || t('通用知识', 'General knowledge')}
                               {document.product_version ? ` · ${document.product_version}` : ''}
@@ -264,7 +265,10 @@ export default function Knowledge({ user, revision, onChange, onSource }: Props)
                       <td>
                         <button
                           className="icon-button"
-                          aria-label={t(`查看 ${document.title}`, `View ${document.title}`)}
+                          aria-label={t(
+                            `查看 ${documentTitle(document)}`,
+                            `View ${documentTitle(document)}`,
+                          )}
                           onClick={() => setDetail(document)}
                         >
                           <ChevronRight size={17} />
@@ -393,7 +397,7 @@ export default function Knowledge({ user, revision, onChange, onSource }: Props)
         />
       )}
       {detail && (
-        <Modal title={detail.title} onClose={() => setDetail(null)} wide>
+        <Modal title={documentTitle(detail)} onClose={() => setDetail(null)} wide>
           <div className="detail-status">
             <Badge value={detail.status} />
             <span>{detail.id}</span>
