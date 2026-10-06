@@ -1,5 +1,6 @@
 .venv/
 .cache/
+.local-notes/
 .npm-cache/
 .playwright-cli/
 output/

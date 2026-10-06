@@ -21,4 +21,4 @@
 - [x] 2026-10-06 双语版本回归：104 passed in 68.73s；6 项前端语言测试、Ruff、TypeScript、Vite、Prettier 通过。见 [双语验证记录](reports/bilingual-verification.md)。
 - [x] 蓝白界面浏览器检查和 JPG 截图已保存，另保留首版旧配色录屏；390px 移动布局已验证，手机菜单交互待真机复核，具体日期与覆盖范围见[浏览器验收记录](browser-verification.md)。
 
-真实 Qwen 付费调用、dense/hybrid/rerank 云端质量和实际云费用**未测**；需用户配置自己的 API 凭据后显式运行，不能用模拟 HTTP 测试或 BM25 报告代替。远程 MCP 协议适配器经过 HTTP 夹具测试，真实企业服务仍待联调。生产 SSO、真实权限写入、防篡改审计和企业合规认证**未实现**。公开仓库目标为 `shaohsuanw803-boop/deskpilot`；具体提交及 CI 状态以 GitHub 为准。
+真实 Qwen 付费调用、dense/hybrid/rerank 云端质量和实际云费用**未测**；需配置自己的 API 凭据后显式运行，不能用模拟 HTTP 测试或 BM25 报告代替。远程 MCP 协议适配器经过 HTTP 夹具测试，真实企业服务仍待联调。生产 SSO、真实权限写入、防篡改审计和企业合规认证**未实现**。
